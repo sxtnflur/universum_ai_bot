@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     YOOKASSA_SHOP_ID: int
     YOOKASSA_API_KEY: str
 
+    API_PREFIX: str = '/universumai/api/v1'
+    BOT_WEBHOOK_ENDPOINT: str = '/webhook'
+    BOT_WEBHOOK_URL: str
+
     SUPPORT_URL: str = '@teledeff_support'
 
     MIN_AMOUNT_UP_BALANCE: float = 1
