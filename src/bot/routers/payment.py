@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import screens
 from ..keyboards.callback_datas.payment import SelectAmountUpBalanceCallback
+from bot.menu import BALANCE, BUY
 
 router = Router()
 
@@ -20,6 +21,7 @@ class BuyStates(StatesGroup):
 
 
 @router.message(Command('balance'))
+@router.message(F.text == BALANCE)
 @db_connect()
 async def balance(message: Message, *, db: AsyncSession):
     bal = await UsersRepo(db).get_one_field('balance', id=message.from_user.id)
@@ -27,6 +29,7 @@ async def balance(message: Message, *, db: AsyncSession):
 
 
 @router.message(Command('buy'))
+@router.message(F.text == BUY)
 async def buy(message: Message, state: FSMContext):
     await screens.payment.main().answer(message)
     await state.set_state(BuyStates.amount)
@@ -65,7 +68,7 @@ async def input_amount(
     try:
         amount = float(message.text)
     except:
-        await message.answer('Введите сумму пополнения (число)')
+        await message.answer('Введите сумму пополнения (число)\n\nВ меню - /start')
         return
 
     if amount < settings.MIN_AMOUNT_UP_BALANCE:

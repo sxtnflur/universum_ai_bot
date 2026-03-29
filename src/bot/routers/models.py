@@ -5,7 +5,7 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message, InputMediaPhoto
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaDocument, URLInputFile
 import inspect
 from typing import get_args
 
@@ -24,6 +24,7 @@ from ..keyboards.callback_datas.models import ScrollModelsCallback, SelectModelC
     SelectResolutionCallback, SelectNumImagesCallback, SelectInputNumberParamCallback
 from data import models
 from ..middlewares.media_group import MediaMiddleware
+from bot.menu import MODELS
 
 router = Router()
 router.message.middleware(MediaMiddleware(2))
@@ -36,6 +37,7 @@ class GenerationStates(StatesGroup):
 
 
 @router.message(Command('models'))
+@router.message(F.text == MODELS)
 async def models_list_m(
     message: Message
 ):
@@ -511,12 +513,22 @@ async def start_generate(
     if 'images' in res:
         if len(res['images']) > 1:
             await call.message.answer_media_group(
-                media=[InputMediaPhoto(media=media,
+                media=[InputMediaPhoto(media=URLInputFile(media),
                                        caption=res.get('text')) for i, media in enumerate(res['images'])]
+            )
+            await call.message.answer_media_group(
+                media=[InputMediaDocument(
+                    media=URLInputFile(media),
+                    caption=res.get('text')) for i, media in enumerate(res['images'])
+                ]
             )
         else:
             await call.message.answer_photo(
-                photo=res['images'][0],
+                photo=URLInputFile(res['images'][0]),
+                caption=res.get('text')
+            )
+            await call.message.answer_document(
+                document=URLInputFile(res['images'][0]),
                 caption=res.get('text')
             )
     elif 'text' in res:

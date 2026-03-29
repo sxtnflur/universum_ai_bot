@@ -40,7 +40,7 @@ def types_to_strings(types: list[str | tuple[str, str]], model_key: str,
 def models_list(models: list[Model],
                 page: int = 0,
                 limit: int = 10):
-    text = '<b>Выберите модель:</b>'
+    text = ''
 
     for model in models:
         text += f'\n\n<b>{model.title}</b>:\n' + types_to_strings(model.types, model.key)
@@ -165,9 +165,9 @@ def prepare_to_generation(
         )])
 
     text += f'\n<b>Количество генераций на получение:</b> {num_images}'
-    text += f'\n\n<b>Стоимость:</b> {round(price * num_images, 2)}'
+    text += f'\n\n<b>Стоимость:</b> {round(price * num_images, 2)} ⚡️'
     if num_images > 1:
-        text += f' <i>({price} за каждую)</i>'
+        text += f' <i>({price} ⚡️ за каждую)</i>'
 
     if price_description:
         text += f'\n<blockquote><b>Как рассчитывается цена?</b>\n{price_description}</blockquote>'
