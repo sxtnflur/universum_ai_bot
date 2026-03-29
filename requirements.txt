@@ -1,0 +1,7 @@
+aiogram
+fal_client
+sqlalchemy
+asyncpg
+yookassa-async
+fastapi
+uvicorn
