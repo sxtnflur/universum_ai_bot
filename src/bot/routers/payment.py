@@ -10,7 +10,7 @@ from depends import payment_factory
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import screens
-from ..keyboards.callback_datas.payment import SelectAmountUpBalanceCallback
+from ..keyboards.callback_datas.payment import SelectAmountUpBalanceCallback, SelectPaymentMethodCallback
 from bot.menu import BALANCE, BUY
 
 router = Router()
@@ -45,13 +45,7 @@ async def buy_call(call: CallbackQuery, state: FSMContext):
 async def select_amount(
     call: CallbackQuery, callback_data: SelectAmountUpBalanceCallback
 ):
-    pay = await payment_factory.create_payment(
-        amount=callback_data.amount,
-        description=f'Пополнение баланса на {callback_data.amount}',
-        payment_method='yookassa',
-        session=await call.bot.session.create_session()
-    )
-    await screens.payment.payment_link(pay.url, amount=callback_data.amount).answer(call)
+    await screens.payment.payment_method(callback_data.amount, settings.SUPPORT_URL).answer(call, 'edit')
 
 
 @router.callback_query(F.data == 'balance-up-select-amount-myamount')
@@ -75,10 +69,22 @@ async def input_amount(
         await message.answer(f'<b>Минимальная сумма пополнения:</b> {settings.MIN_AMOUNT_UP_BALANCE}')
         return
 
+    await screens.payment.payment_method(amount, settings.SUPPORT_URL).answer(message)
+
+
+@router.callback_query(SelectPaymentMethodCallback.filter())
+async def select_pay_method(
+    call: CallbackQuery,
+    callback_data: SelectPaymentMethodCallback
+):
+    if callback_data.method:
+        await call.answer('Этот способ оплаты временно недоступен', show_alert=True)
+        return
+
     pay = await payment_factory.create_payment(
-        amount=amount,
-        description=f'Пополнение баланса на {amount}',
-        payment_method='yookassa',
-        session=await message.bot.session.create_session()
+        amount=callback_data.amount,
+        description=f'Пополнение баланса на {callback_data.amount}',
+        payment_method=callback_data.method,
+        session=await call.bot.session.create_session()
     )
-    await screens.payment.payment_link(pay.url, amount=amount).answer(message)
+    await screens.payment.payment_link(pay.url, amount=callback_data.amount).answer(call, 'edit')

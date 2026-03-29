@@ -518,7 +518,7 @@ async def start_generate(
             )
             await call.message.answer_media_group(
                 media=[InputMediaDocument(
-                    media=URLInputFile(media),
+                    media=URLInputFile(media, filename=media.split('/')[-1]),
                     caption=res.get('text')) for i, media in enumerate(res['images'])
                 ]
             )
@@ -528,7 +528,7 @@ async def start_generate(
                 caption=res.get('text')
             )
             await call.message.answer_document(
-                document=URLInputFile(res['images'][0]),
+                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1]),
                 caption=res.get('text')
             )
     elif 'text' in res:
@@ -548,7 +548,7 @@ async def start_generate(
 
     await call.message.answer(
         text=f'''
--{amount}
+-{amount} ⚡️
 
-<b>Текущий баланс:</b> {updated_balance}'''
+<b>Текущий баланс:</b> {updated_balance} ⚡️'''
     )

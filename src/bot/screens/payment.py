@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from bot.keyboards.base import create_list_kb
 from bot.keyboards.callback_datas.models import ScrollModelsCallback
-from bot.keyboards.callback_datas.payment import SelectAmountUpBalanceCallback
+from bot.keyboards.callback_datas.payment import SelectAmountUpBalanceCallback, SelectPaymentMethodCallback
 from bot.screens.base import ScreenDef
 
 
@@ -33,6 +33,30 @@ def main():
     )
 
 
+def payment_method(amount: float,
+                   pay_username_url: str):
+    return ScreenDef(
+        text=f'<b>Сумма пополнения:</b> {amount}\n\n<b>Выберите способ оплаты:</b>',
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text='ЮКасса (Временно недоступно)',
+                callback_data=SelectPaymentMethodCallback(
+                    method='yookassa',
+                    amount=amount
+                ).pack()
+            )],
+            [InlineKeyboardButton(
+                text='Через поддержку',
+                url=pay_username_url
+            )],
+            [InlineKeyboardButton(
+                text='Назад',
+                callback_data='buy'
+            )]
+        ])
+    )
+
+
 def payment_link(link: str, amount: float):
     return ScreenDef(
         text=f'Для пополнения баланса на сумму: {amount} перейдите по кнопке "Пополнить" и совершите оплату:',
@@ -40,6 +64,9 @@ def payment_link(link: str, amount: float):
             [InlineKeyboardButton(
                 text='Пополнить',
                 url=link
+            )],
+            [InlineKeyboardButton(
+                text=SelectAmountUpBalanceCallback(amount=amount).pack()
             )]
         ])
     )
