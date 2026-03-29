@@ -3,6 +3,24 @@ from bot.screens.base import ScreenDef
 from bot.menu import MODELS, BALANCE, BUY, SUPPORT
 
 
+def first_start(start_balance: float):
+    return ScreenDef(
+        text=f'''
+<b>Добро пожаловать в Universum AI 🚀</b>
+
+Здесь собраны мощные нейросети для:
+• генерации изображений  
+• улучшения качества  
+• редактирования и стилизации  
+
+Всё в одном месте — просто и удобно.
+
+🎁 На старте тебе начислено <b>{start_balance}</b> ⚡️, чтобы ты мог спокойно попробовать возможности бота.
+
+Выбирай модель для генерации здесь (нажми) 👉 /models'''
+    )
+
+
 def menu():
     return ScreenDef(
         text='''
