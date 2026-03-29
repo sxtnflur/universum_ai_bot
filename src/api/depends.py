@@ -1,5 +1,6 @@
 from api.use_cases.payment import PaymentUseCase
 from db.engine import get_db
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing_extensions import Annotated
 
