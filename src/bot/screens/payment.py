@@ -8,7 +8,7 @@ from bot.screens.base import ScreenDef
 def balance(balance: float):
     return ScreenDef(
         text=f'<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji> '
-             f'<b>Ваш баланс:</b> {balance} ⚡️\n-------------\nВ меню: /start\nПополнить баланс: /buy',
+             f'<b>Ваш баланс:</b> {balance} ⚡️\n<blockquote>Пополнить баланс: /buy\nВ меню: /start</blockquote>',
     )
 
 
@@ -28,7 +28,7 @@ def main():
     return ScreenDef(
         text='<tg-emoji emoji-id="5397916757333654639">➕</tg-emoji> <b>Выберите сумму пополнения баланса:</b>\n'
              '1 руб = 1 ⚡️'
-             '\n-------------\nУзнать мой баланс: /balance\nВ меню: /start',
+             '\n<blockquote>Узнать мой баланс: /balance\nВ меню: /start</blockquote>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=ikb)
     )
 

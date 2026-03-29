@@ -45,8 +45,6 @@ def models_list(models: list[Model],
     for model in models:
         text += f'\n\n<b>{model.title}</b>:\n' + types_to_strings(model.types, model.key)
 
-    text += '\n-------------\nВ меню: /start'
-
     return ScreenDef(
         text=text,
         reply_markup=keyboards.models.models_list(
@@ -174,7 +172,7 @@ def prepare_to_generation(
 
     text += '\n\n<tg-emoji emoji-id="5447644880824181073">⚠️</tg-emoji> ' \
             'Вы можете сразу начать генерацию по кнопке "Сгенерировать" или указать доп. настройки кнопками ниже'
-    text += '\n-------------\nВыбрать другую модель: /models\nВ меню: /start'
+    text += '\n<blockquote>Выбрать другую модель: /models\nВ меню: /start</blockquote>'
     return ScreenDef(
         text=text,
         reply_markup=InlineKeyboardMarkup(inline_keyboard=ikb)
