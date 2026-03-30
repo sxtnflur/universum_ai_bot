@@ -12,4 +12,5 @@ class User(Base):
     last_name: Mapped[str | None]
     language: Mapped[str | None]
     balance: Mapped[float] = mapped_column(server_default='0')
+    utm: Mapped[str | None]
     created_at: Mapped[CreatedAt]

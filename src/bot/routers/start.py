@@ -28,6 +28,11 @@ async def start(
     if not await UsersRepo(db).exists(id=message.from_user.id):
         await screens.start.first_start(start_balance).answer(message)
 
+    utm = None
+    if command and command.args:
+        if command.args.startswith('utm-'):
+            utm = command.args.split('-')[1]
+
     await UsersRepo(db).add_or_update(
         values=dict(
             id=message.from_user.id,
@@ -35,9 +40,10 @@ async def start(
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
             language=message.from_user.language_code,
-            balance=start_balance
+            balance=start_balance,
+            utm=utm
         ),
-        not_update=['id', 'balance'],
+        not_update=['id', 'balance', 'utm'],
         on_conflict=['id']
     )
 

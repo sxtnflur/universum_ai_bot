@@ -27,9 +27,25 @@ async def admin_menu(
             [InlineKeyboardButton(
                 text='Статистика',
                 callback_data='admin:stat'
+            )],
+            [InlineKeyboardButton(
+                text='UTM',
+                callback_data='admin:utm'
             )]
         ])
     )
+
+
+@router.callback_query(F.data == 'admin:utm')
+@db_connect()
+async def utm_stat(call: CallbackQuery, *, db: AsyncSession):
+    stat = await UsersRepo(db).get_utm_stats()
+    text = ''
+    for utm_name, count in stat:
+        if utm_name is None:
+            utm_name = 'Без UTM'
+        text += f'<b>{utm_name}:</b> {count}\n'
+    await call.message.answer(text)
 
 
 @router.callback_query(F.data == 'admin:stat')
