@@ -54,9 +54,9 @@ async def stat(call: CallbackQuery, *, db: AsyncSession):
         f'Всего пользователей: {users_total}\n'
         f'Пришло за последние 24ч: {users_come_last24h}\n'
         f'Пришло за последние 7 дней: {users_come_last7d}\n\n'
-        f'Оплат всего: {payments_total} на сумму {payments_amount_total}\n'
-        f'Оплат за последние 24ч: {payments_last24h} на сумму {payments_amount_last24h}\n'
-        f'Оплат за последние 24ч: {payments_last7d} на сумму {payments_amount_last7d}'
+        f'Оплат всего: {payments_total} на сумму {payments_amount_total or 0}\n'
+        f'Оплат за последние 24ч: {payments_last24h} на сумму {payments_amount_last24h or 0}\n'
+        f'Оплат за последние 24ч: {payments_last7d} на сумму {payments_amount_last7d or 0}'
     )
 
 

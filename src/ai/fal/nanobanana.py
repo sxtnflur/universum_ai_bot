@@ -192,8 +192,8 @@ class NanoBanana2(FALService):
             price *= 0.75
 
         if kwargs.get('thinking_level') == 'high':
-            price += 0.002
-        return price
+            price += 0.01
+        return round(price, 2)
 
     async def text_to_image(
             self,

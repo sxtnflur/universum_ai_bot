@@ -16,7 +16,7 @@ class Phota(FALService):
         price = self.price_per_one
         if kwargs.get('resolution') == '4K':
             price *= 2
-        return price
+        return round(price, 2)
 
     async def text_to_image(
         self,

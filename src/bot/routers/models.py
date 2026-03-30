@@ -468,16 +468,14 @@ async def start_generate(
     model_key = data['model_key']
     action_type = data['action_type']
 
-    model = models[model_key]
-
     fal_service = fal_factory.get_model_by_key(model_key)
     func: Callable = getattr(fal_service, action_type)
 
     func_info = inspect_generation_func(func)
 
-    amount: float = fal_service.get_price(
+    amount: float = round(fal_service.get_price(
         func=func_info.func, kwargs=data
-    ) * data.get('num_images', 1)
+    ) * data.get('num_images', 1), 2)
 
     @db_connect()
     async def get_balance(db: AsyncSession):

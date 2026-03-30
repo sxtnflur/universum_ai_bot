@@ -19,5 +19,5 @@ def calculate_upscale_cost(image: Image, upscale_factor, price_per_mp=0.001):
         "original_size": (width, height),
         "upscaled_size": (new_width, new_height),
         "megapixels": megapixels,
-        "cost": cost
+        "cost": round(cost, 2)
     }
