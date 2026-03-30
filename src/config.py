@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     MIN_AMOUNT_UP_BALANCE: float = 1
 
+    ADMIN_IDS: list[int] = [1304563494]
+
     @property
     def BOT_URL(self):
         return f'https://t.me/{self.BOT_USERNAME}'
