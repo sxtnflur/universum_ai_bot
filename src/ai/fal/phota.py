@@ -23,7 +23,7 @@ class Phota(FALService):
         prompt: str,
         num_images: Annotated[int, Field(ge=1, le=4)] = 1,
         resolution: Literal['1K', '4K'] = '1K',
-        aspect_ratio: Literal['auto', '1:1', '16:9', '4:3',
+        ratio: Literal['auto', '1:1', '16:9', '4:3',
                               '3:4', '9:16'] = 'auto',
         # profile_ids: list[str] | None = None
     ):
@@ -31,7 +31,7 @@ class Phota(FALService):
             prompt=prompt,
             num_images=num_images,
             resolution=resolution,
-            aspect_ratio=aspect_ratio,
+            aspect_ratio=ratio,
             output_format='png'
         )
         res = await self.request_with_polling(
@@ -51,7 +51,7 @@ class Phota(FALService):
         images: Annotated[list[Image], Field(max_length=10)],
         num_images: Annotated[int, Field(ge=1, le=4)] = 1,
         resolution: Literal['1K', '4K'] = '1K',
-        aspect_ratio: Literal['auto', '1:1', '16:9', '4:3',
+        ratio: Literal['auto', '1:1', '16:9', '4:3',
                               '3:4', '9:16'] = 'auto',
     ):
         image_urls = [await self.upload_image(image=image) for image in images]
@@ -60,7 +60,7 @@ class Phota(FALService):
                 image_urls=image_urls,
                 num_images=num_images,
                 resolution=resolution,
-                aspect_ratio=aspect_ratio,
+                aspect_ratio=ratio,
                 output_format='png'
             )
         res = await self.request_with_polling(

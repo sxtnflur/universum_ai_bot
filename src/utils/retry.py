@@ -38,7 +38,8 @@ def async_retry(
                     logger.error(
                         f"[async_retry] Ошибка: {e}. "
                         f"Попытка {attempt}/{attempts}. "
-                        f"Повтор через {current_delay} сек..."
+                        f"Повтор через {current_delay} сек...",
+                        exc_info=True
                     )
 
                     await asyncio.sleep(current_delay)

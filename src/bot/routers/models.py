@@ -549,9 +549,9 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int):
             )
             await bot.send_media_group(
                 chat_id=chat_id,
-                media=[InputMediaDocument(
-                    media=URLInputFile(media, filename=media.split('/')[-1]),
-                    caption=res.get('text')) for i, media in enumerate(res['images'])
+                media=[
+                    InputMediaDocument(media=URLInputFile(media, filename=media.split('/')[-1]))
+                    for i, media in enumerate(res['images'])
                 ]
             )
         else:
@@ -562,8 +562,7 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int):
             )
             await bot.send_document(
                 chat_id=chat_id,
-                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1]),
-                caption=res.get('text')
+                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1])
             )
     elif 'text' in res:
         await bot.send_message(

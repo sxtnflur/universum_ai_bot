@@ -5,7 +5,7 @@ from utils.price import process_amount
 
 from .base import FALService
 
-RatioType = Literal['1:1', '3:4', '9:16', '16:9']
+RatioType = Literal['auto', '1:1', '3:4', '9:16', '16:9']
 Version = Literal['nano-banana', 'nano-banana-pro', 'nano-banana-2']
 Resolution = Literal['0.5K', '1K', '2K', '4K']
 ThinkingLevel = Literal['minimal', 'high']
@@ -63,7 +63,8 @@ class GeneralNanoBananaService:
             num_images: int,
             resolution: Resolution | None = None,
             version: Version = 'nano-banana-2',
-            ratio: RatioType | None = None
+            ratio: RatioType | None = None,
+            thinking_level: ThinkingLevel | None = None
     ) -> dict:
         if version not in ('nano-banana', 'nano-banana-pro', 'nano-banana-2'):
             raise
@@ -78,6 +79,8 @@ class GeneralNanoBananaService:
             args.update(resolution=resolution)
         if ratio:
             args.update(aspect_ratio=ratio)
+        if thinking_level:
+            args.update(thinking_level=thinking_level)
         res = await self.fal.request_with_polling(
             f'fal-ai/{version}/edit', arguments=args
         )
@@ -102,7 +105,7 @@ class NanoBanana(FALService):
             self,
             prompt: str,
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
-            ratio: RatioType = '1:1'
+            ratio: RatioType = 'auto'
     ):
         return await GeneralNanoBananaService(self).text_to_image(
             prompt=prompt,
@@ -117,7 +120,7 @@ class NanoBanana(FALService):
             prompt: str,
             images: Annotated[list[Image], Field(max_length=4)],
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
-            ratio: RatioType = '1:1'
+            ratio: RatioType = 'auto'
     ) -> dict:
         return await GeneralNanoBananaService(self).image_to_image(
             prompt=prompt,
@@ -147,7 +150,7 @@ class NanoBananaPro(FALService):
             prompt: str,
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
             resolution: Literal['1K', '2K', '4K'] = '1K',
-            ratio: RatioType = '1:1'
+            ratio: RatioType = 'auto'
     ):
         return await GeneralNanoBananaService(self).text_to_image(
             prompt=prompt,
@@ -163,7 +166,7 @@ class NanoBananaPro(FALService):
             images: Annotated[list[Image], Field(max_length=4)],
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
             resolution: Resolution = '1K',
-            ratio: RatioType = '1:1'
+            ratio: RatioType = 'auto'
     ) -> dict:
         return await GeneralNanoBananaService(self).image_to_image(
             prompt=prompt,
@@ -200,7 +203,7 @@ class NanoBanana2(FALService):
             prompt: str,
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
             resolution: Resolution = '1K',
-            ratio: RatioType = '1:1',
+            ratio: RatioType = 'auto',
             thinking_level: ThinkingLevel = 'minimal'
     ):
         return await GeneralNanoBananaService(self).text_to_image(
@@ -218,7 +221,7 @@ class NanoBanana2(FALService):
             images: Annotated[list[Image], Field(max_length=4)],
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
             resolution: Resolution = '1K',
-            ratio: RatioType = '1:1',
+            ratio: RatioType = 'auto',
             thinking_level: ThinkingLevel = 'minimal'
     ) -> dict:
         return await GeneralNanoBananaService(self).image_to_image(
