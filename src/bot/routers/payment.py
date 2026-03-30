@@ -81,6 +81,7 @@ async def select_pay_method(
         amount=callback_data.amount,
         description=f'Пополнение баланса на {callback_data.amount}',
         payment_method=callback_data.method,
-        session=await call.bot.session.create_session()
+        session=await call.bot.session.create_session(),
+        metadata=dict(user_id=call.from_user.id)
     )
     await screens.payment.payment_link(pay.url, amount=callback_data.amount).answer(call, 'edit')
