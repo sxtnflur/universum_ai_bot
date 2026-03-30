@@ -36,7 +36,7 @@ def main():
 def payment_method(amount: float,
                    pay_username_url: str):
     return ScreenDef(
-        text=f'<b>Сумма пополнения:</b> {amount}\n\n<b>Выберите способ оплаты:</b>',
+        text=f'<b>Сумма пополнения:</b> {amount} ⚡️\n\n<b>Выберите способ оплаты:</b>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text='ЮКасса (Временно недоступно)',
@@ -59,7 +59,7 @@ def payment_method(amount: float,
 
 def payment_link(link: str, amount: float):
     return ScreenDef(
-        text=f'Для пополнения баланса на сумму: {amount} перейдите по кнопке "Пополнить" и совершите оплату:',
+        text=f'Для пополнения баланса на сумму: {amount} руб. перейдите по кнопке "Пополнить" и совершите оплату:',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text='Пополнить',
@@ -76,8 +76,8 @@ def payment_link(link: str, amount: float):
 def on_payment(amount: float, balance: float):
     return ScreenDef(
         text=f'''
-Баланс успешно пополнен на {amount}
-<b>Текущий баланс: {balance}</i>''',
+<tg-emoji emoji-id="5206607081334906820">✔️</tg-emoji> Баланс успешно пополнен на {amount} ⚡️
+<b>Текущий баланс: {balance}</b> ⚡️''',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text='К генерациям',

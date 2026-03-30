@@ -11,7 +11,7 @@ class PaymentUseCase:
 
     async def on_payment(self, order_id: str, amount: float, metadata: dict,
                          method: str = 'yookassa') -> None:
-        user_id: int = metadata['user_id']
+        user_id: int = int(metadata['user_id'])
         updated_balance = await UsersRepo(self.db).increase_field(
             filters=dict(id=user_id),
             field='balance',

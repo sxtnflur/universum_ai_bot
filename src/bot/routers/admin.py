@@ -21,6 +21,7 @@ async def admin_menu(
     await message.answer(
         'Пополнить баланс на 10: <code>balup</code> 10 @username/user_id\n'
         'Уменьшить баланс на 10: <code>baldown</code> 10 @username/user_id\n'
+        'Установить баланс на 10: <code>balset</code> 10 @username/user_id\n'
         'Посмотреть баланс: <code>balshow</code> 10 @username/user_id\n',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
@@ -95,6 +96,20 @@ async def down_balance(message: Message, *, db: AsyncSession):
     )
     await message.answer(
         f'Баланс юзера {user} уменьшен на {val}. Текущий баланс: {upd_val}'
+    )
+
+
+@router.message(F.text.startswith('balset '))
+@db_connect()
+async def set_balance(message: Message, *, db: AsyncSession):
+    data = message.text.split()
+    val, user = float(data[1]), data[2]
+    await UsersRepo(db).update(
+        filters=get_user_filters(user),
+        updates=dict(balance=val)
+    )
+    await message.answer(
+        f'Баланс юзера {user} установлен на {val}'
     )
 
 
