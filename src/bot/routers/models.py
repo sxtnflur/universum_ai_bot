@@ -1,11 +1,14 @@
+import asyncio
 from typing import Callable, get_origin, Annotated
 
+import aiogram
 from PIL import Image
 from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaDocument, URLInputFile
+from aiogram.exceptions import TelegramAPIError
 import inspect
 from typing import get_args
 
@@ -18,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from utils.do_while import send_action_while_do_func
 from utils.inspect_func import inspect_generation_func, GenFuncInfo
 from utils.price import process_amount
+from utils.retry import async_retry
 from .. import screens, keyboards
 
 from ..keyboards.callback_datas.models import ScrollModelsCallback, SelectModelCallback, SelectRatioCallback, \
@@ -508,33 +512,11 @@ async def start_generate(
         coroutine=func(**kwargs), chat_id=call.message.chat.id,
         bot=call.bot, action=action
     )
-    await wait_msg.delete()
-
-    if 'images' in res:
-        if len(res['images']) > 1:
-            await call.message.answer_media_group(
-                media=[InputMediaPhoto(media=URLInputFile(media),
-                                       caption=res.get('text')) for i, media in enumerate(res['images'])]
-            )
-            await call.message.answer_media_group(
-                media=[InputMediaDocument(
-                    media=URLInputFile(media, filename=media.split('/')[-1]),
-                    caption=res.get('text')) for i, media in enumerate(res['images'])
-                ]
-            )
-        else:
-            await call.message.answer_photo(
-                photo=URLInputFile(res['images'][0]),
-                caption=res.get('text')
-            )
-            await call.message.answer_document(
-                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1]),
-                caption=res.get('text')
-            )
-    elif 'text' in res:
-        await call.message.answer(
-            text=res['text']
-        )
+    try:
+        await wait_msg.delete()
+    except:
+        pass
+    await send_result(res, bot=call.bot, chat_id=call.message.chat.id)
 
     @db_connect()
     async def decrease(db: AsyncSession):
@@ -552,3 +534,41 @@ async def start_generate(
 
 <b>Текущий баланс:</b> {updated_balance} ⚡️'''
     )
+
+
+@async_retry(
+    attempts=50, delay=60,
+    exceptions=(asyncio.TimeoutError, asyncio.CancelledError, TelegramAPIError),
+    backoff=2
+)
+async def send_result(res: dict, bot: aiogram.Bot, chat_id: int):
+    if 'images' in res:
+        if len(res['images']) > 1:
+            await bot.send_media_group(
+                chat_id=chat_id,
+                media=[InputMediaPhoto(media=URLInputFile(media),
+                                       caption=res.get('text')) for i, media in enumerate(res['images'])]
+            )
+            await bot.send_media_group(
+                chat_id=chat_id,
+                media=[InputMediaDocument(
+                    media=URLInputFile(media, filename=media.split('/')[-1]),
+                    caption=res.get('text')) for i, media in enumerate(res['images'])
+                ]
+            )
+        else:
+            await bot.send_photo(
+                chat_id=chat_id,
+                photo=URLInputFile(res['images'][0]),
+                caption=res.get('text')
+            )
+            await bot.send_document(
+                chat_id=chat_id,
+                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1]),
+                caption=res.get('text')
+            )
+    elif 'text' in res:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=res['text']
+        )
