@@ -66,7 +66,8 @@ def payment_link(link: str, amount: float):
                 url=link
             )],
             [InlineKeyboardButton(
-                text=SelectAmountUpBalanceCallback(amount=amount).pack()
+                text='Назад',
+                callback_data=SelectAmountUpBalanceCallback(amount=amount).pack()
             )]
         ])
     )
