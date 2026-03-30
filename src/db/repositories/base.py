@@ -146,3 +146,8 @@ class BaseRepo(Protocol[T]):
             .filter(*self._prepare_filters(filters))
         )
 
+    async def sum(self, field: str, **filters) -> float:
+        return await self.db.scalar(
+            select(func.sum(getattr(self.model, field)))
+            .filter(*self._prepare_filters(filters))
+        )

@@ -1,10 +1,12 @@
+import datetime
+
 from aiogram import Router, F
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from bot.filters import IsAdmin
 from config import settings
 from db.decorator import db_connect
-from db.repositories import UsersRepo
+from db.repositories import UsersRepo, PaymentsRepo
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
@@ -17,7 +19,44 @@ async def admin_menu(
     message: Message
 ):
     await message.answer(
-        'balup 10 @username/user_id - Пополнить баланс'
+        'Пополнить баланс на 10: <code>balup</code> 10 @username/user_id\n'
+        'Уменьшить баланс на 10: <code>baldown</code> 10 @username/user_id\n'
+        'Посмотреть баланс: <code>balshow</code> 10 @username/user_id\n',
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Статистика',
+                callback_data='admin:stat'
+            )]
+        ])
+    )
+
+
+@router.callback_query(F.data == 'admin:stat')
+@db_connect()
+async def stat(call: CallbackQuery, *, db: AsyncSession):
+    users_total = await UsersRepo(db).count()
+    users_come_last24h = await UsersRepo(db).count(created_at__ge=datetime.datetime.utcnow()-datetime.timedelta(hours=24))
+    users_come_last7d = await UsersRepo(db).count(created_at__ge=datetime.datetime.utcnow()-datetime.timedelta(days=7))
+
+    payments_total = await PaymentsRepo(db).count()
+    payments_last24h = await PaymentsRepo(db).count(created_at__ge=datetime.datetime.utcnow()-datetime.timedelta(hours=24))
+    payments_last7d = await PaymentsRepo(db).count(created_at__ge=datetime.datetime.utcnow()-datetime.timedelta(days=7))
+
+    payments_amount_total = await PaymentsRepo(db).sum('amount')
+    payments_amount_last24h = await PaymentsRepo(db).sum(
+        'amount',
+        created_at__ge=datetime.datetime.utcnow() - datetime.timedelta(hours=24))
+    payments_amount_last7d = await PaymentsRepo(db).sum(
+        'amount',
+        created_at__ge=datetime.datetime.utcnow() - datetime.timedelta(days=7))
+
+    await call.message.answer(
+        f'Всего пользователей: {users_total}\n'
+        f'Пришло за последние 24ч: {users_come_last24h}\n'
+        f'Пришло за последние 7 дней: {users_come_last7d}\n\n'
+        f'Оплат всего: {payments_total} на сумму {payments_amount_total}\n'
+        f'Оплат за последние 24ч: {payments_last24h} на сумму {payments_amount_last24h}\n'
+        f'Оплат за последние 24ч: {payments_last7d} на сумму {payments_amount_last7d}'
     )
 
 

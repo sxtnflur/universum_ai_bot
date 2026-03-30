@@ -15,8 +15,10 @@ async def pay_yookassa(
     payload = WebhookNotification(**await request.json())
 
     await payments_use_case.on_payment(
+        order_id=payload.object.id,
         amount=payload.object.amount.value,
-        metadata=payload.object.metadata
+        metadata=payload.object.metadata,
+        method='yookassa'
     )
     return {
         'status': 'OK'
