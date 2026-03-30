@@ -77,10 +77,6 @@ async def select_pay_method(
     call: CallbackQuery,
     callback_data: SelectPaymentMethodCallback
 ):
-    if callback_data.method:
-        await call.answer('Этот способ оплаты временно недоступен', show_alert=True)
-        return
-
     pay = await payment_factory.create_payment(
         amount=callback_data.amount,
         description=f'Пополнение баланса на {callback_data.amount}',
