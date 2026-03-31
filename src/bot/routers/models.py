@@ -13,7 +13,7 @@ import inspect
 from typing import get_args
 
 from db.decorator import db_connect
-from db.repositories import UsersRepo
+from db.repositories import UsersRepo, GenerationRequestsRepo
 from depends import fal_factory
 from mytypes import ActionType
 from pydantic import Field
@@ -475,11 +475,12 @@ async def start_generate(
 
     amount: float = round(fal_service.get_price(
         func=func_info.func, kwargs=data
-    ) * data.get('num_images', 1), 2)
+    ), 2)
 
     @db_connect()
     async def get_balance(db: AsyncSession):
         return await UsersRepo(db).get_one_field('balance', id=call.from_user.id)
+
     balance = await get_balance()
     if balance < amount:
         await screens.models.not_enough_balance(balance, amount).answer(call)
@@ -493,45 +494,60 @@ async def start_generate(
                     for img_file_id in kwargs.get('images')]
         )
 
-    if action_type.endswith('image'):
-        action = 'upload_photo'
-    elif action_type.endswith('text'):
-        action = 'typing'
-    elif action_type.endswith('video'):
-        action = 'upload_video'
-    elif action_type.endswith('audio'):
-        action = 'upload_voice'
-    else:
-        action = 'typing'
+    if not fal_service.use_webhook:
+        if action_type.endswith('image'):
+            action = 'upload_photo'
+        elif action_type.endswith('text'):
+            action = 'typing'
+        elif action_type.endswith('video'):
+            action = 'upload_video'
+        elif action_type.endswith('audio'):
+            action = 'upload_voice'
+        else:
+            action = 'typing'
 
-    wait_msg = await call.message.answer('Подождите немного, сейчас я все сделаю...')
+        wait_msg = await call.message.answer('Подождите немного, генерация займет некоторое время...')
 
-    res = await send_action_while_do_func(
-        coroutine=func(**kwargs), chat_id=call.message.chat.id,
-        bot=call.bot, action=action
-    )
-    try:
-        await wait_msg.delete()
-    except:
-        pass
-    await send_result(res, bot=call.bot, chat_id=call.message.chat.id)
+        res = await send_action_while_do_func(
+            coroutine=func(**kwargs), chat_id=call.message.chat.id,
+            bot=call.bot, action=action
+        )
+        try:
+            await wait_msg.delete()
+        except:
+            pass
 
-    @db_connect()
-    async def decrease(db: AsyncSession):
-        return await UsersRepo(db).decrease_field(
-            filters=dict(id=call.from_user.id),
-            field='balance',
-            value=amount
+        await send_result(res, bot=call.bot, chat_id=call.message.chat.id)
+
+        @db_connect()
+        async def decrease(db: AsyncSession):
+            return await UsersRepo(db).decrease_field(
+                filters=dict(id=call.from_user.id),
+                field='balance',
+                value=amount
+            )
+
+        updated_balance = await decrease()
+
+        await call.message.answer(
+            text=f'''
+-{amount} ⚡️
+    
+<b>Текущий баланс:</b> {updated_balance} ⚡️'''
         )
 
-    updated_balance = await decrease()
+    else:
+        request_id = await func(**kwargs)
 
-    await call.message.answer(
-        text=f'''
--{amount} ⚡️
+        @db_connect()
+        async def create_request(db: AsyncSession):
+            await GenerationRequestsRepo(db).add(
+                request_id=request_id,
+                user_id=call.from_user.id,
+                amount=amount
+            )
 
-<b>Текущий баланс:</b> {updated_balance} ⚡️'''
-    )
+        await call.message.answer('Подождите немного, генерация займет некоторое время...')
 
 
 @async_retry(

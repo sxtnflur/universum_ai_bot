@@ -16,7 +16,7 @@ class Phota(FALService):
         price = self.price_per_one
         if kwargs.get('resolution') == '4K':
             price *= 2
-        return round(price, 2)
+        return round(price * kwargs.get('num_images', 1), 2)
 
     async def text_to_image(
         self,
@@ -42,7 +42,7 @@ class Phota(FALService):
             'images': [img.get('url') for img in res.get('images')],
             'price': self.get_price(
                 func='text_to_image', kwargs=args
-            ) * len(res['images'])
+            )
         }
 
     async def image_to_image(
@@ -71,5 +71,5 @@ class Phota(FALService):
             'images': [img.get('url') for img in res.get('images')],
             'price': self.get_price(
                 func='text_to_image', kwargs=args
-            ) * len(res['images'])
+            )
         }

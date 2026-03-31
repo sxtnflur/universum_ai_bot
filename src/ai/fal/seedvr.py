@@ -44,5 +44,5 @@ class Seedvr(FALService):
             )
         )
         return {
-            'images': res['image']['url']
+            'images': [res['image']['url']]
         }

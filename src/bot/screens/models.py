@@ -140,15 +140,15 @@ def prepare_to_generation(
             text=resolution, callback_data='select-resolution'
         )])
     if upscale_factor:
-        text += f'\n<b>Upscale Factor:</b> {upscale_factor}'
+        text += f'\n<b>Коэффициент улучшения (Upscale Factor):</b> {upscale_factor}'
         ikb.append([InlineKeyboardButton(
-            text=f'Factor: {upscale_factor}',
+            text=f'Коэф. улучш.: {upscale_factor}',
             callback_data=SelectInputNumberParamCallback(
                 param='upscale_factor'
             ).pack()
         )])
     if noise_scale:
-        text += f'\n<b>Noise Scale:</b> {noise_scale}'
+        text += f'\n<b>Noise Scale (шкала шума):</b> {noise_scale}'
         ikb.append([InlineKeyboardButton(
             text=f'Noise Scale: {noise_scale}',
             callback_data=SelectInputNumberParamCallback(
@@ -158,14 +158,14 @@ def prepare_to_generation(
 
     if max_num_images > 1:
         ikb.append([InlineKeyboardButton(
-            text=f'Фото на выходе: {num_images}',
+            text=f'Количество фото: {num_images}',
             callback_data='select-num_images'
         )])
 
-    text += f'\n<b>Количество генераций на получение:</b> {num_images}'
-    text += f'\n\n<b>Стоимость:</b> {round(price * num_images, 2)} ⚡️'
+    text += f'\n<b>Количество фото:</b> {num_images}'
+    text += f'\n\n<b>Стоимость:</b> {round(price, 2)} ⚡️'
     if num_images > 1:
-        text += f' <i>({price} ⚡️ за каждую)</i>'
+        text += f' <i>({round(price / num_images, 2)} ⚡️ за каждую)</i>'
 
     if price_description:
         text += f'\n<blockquote><b>Как рассчитывается цена?</b>\n{price_description}</blockquote>'

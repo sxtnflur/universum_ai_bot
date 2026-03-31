@@ -91,7 +91,7 @@ class GeneralNanoBananaService:
             'price': self.fal.get_price(
                 func='image_to_image',
                 kwargs=args
-            ) * len(res['images'])
+            )
         }
 
 
@@ -99,13 +99,13 @@ class NanoBanana(FALService):
     price_per_one = process_amount(0.039)
 
     def get_price(self, **kwargs):
-        return self.price_per_one
+        return self.price_per_one * kwargs.get('num_images', 1)
 
     async def text_to_image(
             self,
             prompt: str,
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
-            ratio: RatioType = 'auto'
+            ratio: Literal['1:1', '3:4', '9:16', '16:9'] = '1:1'
     ):
         return await GeneralNanoBananaService(self).text_to_image(
             prompt=prompt,
@@ -143,14 +143,14 @@ class NanoBananaPro(FALService):
         price = self.price_per_one
         if kwargs.get('resolution') == '4K':
             price *= 2
-        return price
+        return round(price * kwargs.get('num_images', 1), 2)
 
     async def text_to_image(
             self,
             prompt: str,
             num_images: Annotated[int, Field(ge=1, le=4)] = 1,
             resolution: Literal['1K', '2K', '4K'] = '1K',
-            ratio: RatioType = 'auto'
+            ratio: RatioType = '1:1'
     ):
         return await GeneralNanoBananaService(self).text_to_image(
             prompt=prompt,
@@ -196,7 +196,7 @@ class NanoBanana2(FALService):
 
         if kwargs.get('thinking_level') == 'high':
             price += 0.01
-        return round(price, 2)
+        return round(price * kwargs.get('num_images', 1), 2)
 
     async def text_to_image(
             self,

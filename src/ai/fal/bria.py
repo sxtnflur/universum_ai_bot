@@ -27,5 +27,5 @@ class BriaFiboEdit(FALService):
         )
         return {
             'images': [img['url'] for img in res['images']],
-            'price': self.get_price() * len(res['images'])
+            'price': self.get_price()
         }

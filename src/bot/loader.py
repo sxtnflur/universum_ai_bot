@@ -9,5 +9,6 @@ bot = Bot(token=settings.BOT_TOKEN,
               parse_mode=ParseMode.HTML,
               link_preview_is_disabled=True
           ))
+
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)

@@ -21,7 +21,7 @@ class BytedanceSeedream5(FALService):
     price_per_one = process_amount(0.035)
 
     def get_price(self, *args, **kwargs):
-        return self.price_per_one
+        return self.price_per_one * kwargs.get('num_images', 1)
 
     async def text_to_image(
         self,
@@ -45,7 +45,7 @@ class BytedanceSeedream5(FALService):
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
-            'price': self.get_price() * len(res['images'])
+            'price': self.get_price(num_images=num_images)
         }
 
     async def image_to_image(
@@ -69,5 +69,5 @@ class BytedanceSeedream5(FALService):
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
-            'price': self.get_price() * len(res['images'])
+            'price': self.get_price(num_images=num_images)
         }

@@ -13,11 +13,13 @@ class Settings(BaseSettings):
     BOT_WEBHOOK_ENDPOINT: str = '/webhook'
     BOT_WEBHOOK_URL: str
 
-    SUPPORT_URL: str = 't.me/teledeff_support'
+    SUPPORT_URL: str = '@teledeff_support'
 
     MIN_AMOUNT_UP_BALANCE: float = 1
 
     ADMIN_IDS: list[int] = [1304563494]
+
+    SECRET_TOKEN: str
 
     @property
     def BOT_URL(self):

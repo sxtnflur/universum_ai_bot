@@ -8,6 +8,8 @@ from PIL import Image
 
 
 class FALService:
+    use_webhook: bool = False
+
     def __init__(self, webhook_base_url: str):
         self.webhook_base_url = webhook_base_url
 

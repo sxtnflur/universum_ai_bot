@@ -1,30 +1,20 @@
-import aiogram
-from bot import screens
-from db.repositories import UsersRepo, PaymentsRepo
+from services.payments import PaymentService
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class PaymentUseCase:
-    def __init__(self, db: AsyncSession, bot: aiogram.Bot):
+    def __init__(self, db: AsyncSession,
+                 payment_service: PaymentService):
         self.db = db
-        self.bot = bot
+        self.payment_service = payment_service
 
     async def on_payment(self, order_id: str, amount: float, metadata: dict,
                          method: str = 'yookassa') -> None:
         user_id: int = int(metadata['user_id'])
-        updated_balance = await UsersRepo(self.db).increase_field(
-            filters=dict(id=user_id),
-            field='balance',
-            value=amount
-        )
-        await PaymentsRepo(self.db).add(
-            order_id=order_id,
+        await self.payment_service.on_payment(
             user_id=user_id,
             amount=amount,
-            method=method
+            order_id=order_id,
+            method=method,
+            db=self.db
         )
-        await self.db.commit()
-
-        await screens.payment.on_payment(
-            amount=amount, balance=updated_balance
-        ).send_by_id(user_id, self.bot)
