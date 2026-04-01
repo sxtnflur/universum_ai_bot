@@ -1,6 +1,6 @@
 import abc
 
-from yookassa import Payment
+from yookassa import Payment, Configuration
 from .base import AbstractPaymentService, PaymentData
 from config import settings
 
