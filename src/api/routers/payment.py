@@ -12,7 +12,8 @@ async def pay_yookassa(
     payments_use_case: PaymentUseCase
 ) -> dict:
     payload = WebhookNotification(**await request.json())
-
+    if payload.event != "payment.succeeded":
+        return {"status": "ignored"}
     await payments_use_case.on_payment(
         order_id=payload.object.id,
         amount=payload.object.amount.value,
