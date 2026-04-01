@@ -1,3 +1,4 @@
+import datetime
 import textwrap
 from typing import Iterable
 
@@ -192,4 +193,50 @@ def not_enough_balance(
 
 <b>Пополнить баланс:</b> /buy
 '''
+    )
+
+
+def on_success_generation(
+    model_title: str,
+    action_type_title: str,
+    amount: float,
+    updated_balance: float
+):
+    return ScreenDef(
+        text=f'''
+<tg-emoji emoji-id="5206607081334906820">✔️</tg-emoji> Генерация для модели <b>{model_title} ({action_type_title})</b> выполнена
+
+<b>Генерация стоила:</b> {amount} ⚡️
+<b>Текущий баланс:</b> {updated_balance} ⚡️'''
+    )
+
+
+def _on_failed_gen(
+    request_id: str | None = None
+):
+    text = f'<blockquote>'
+    if request_id is None:
+        text += f'<b>ID запроса:</b> <code>{request_id}</code>\n'
+    text += f'<b>Время ошибки (UTC):</b> {datetime.datetime.utcnow().strftime("%H:%M %d.%m.%Y")}</blockquote>'
+    return text
+
+
+def on_failed_sending_generation(
+    support_url: str, delay: int, request_id: str | None = None
+):
+    return ScreenDef(
+        text=f'<b>Произошла ошибка при отправке результата генерации</b>\n'
+             f'Повторная попытка отправки будет через <i>{delay}</i> секунд\n'
+             f'Если ждете слишком долго, перешлите это сообщение в поддержку: {support_url}\n\n'
+             f'{_on_failed_gen(request_id)}'
+    )
+
+
+def on_failed_generation(
+    request_id: str,
+    support_url: str
+):
+    return ScreenDef(
+        text=f'<b>Произошла ошибка во время генерации. '
+             f'Пожалуйста, перешлите это сообщение в поддержку: {support_url}</b>\n\n{_on_failed_gen(request_id)}'
     )

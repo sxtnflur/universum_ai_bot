@@ -11,7 +11,7 @@ from depends import payment_factory, payment_service
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils import price as price_util
 
-from .. import screens
+from .. import screens, keyboards
 from ..keyboards.callback_datas.payment import SelectAmountUpBalanceCallback, SelectPaymentMethodCallback
 from bot.menu import BALANCE, BUY
 
@@ -88,6 +88,7 @@ async def select_pay_method(
         return
 
     amount = round(price_util.convert(amount=callback_data.amount, to=currency), 2)
+    currency_sign = price_util.get_sign(currency)
 
     if callback_data.method == 'XTR':
         try:
@@ -98,18 +99,26 @@ async def select_pay_method(
             )
             return
 
-        description = f'Пополнение баланса на {callback_data.amount} ⚡️ = {amount} {price_util.get_sign(currency)}'
+        description = f'Пополнение баланса на {callback_data.amount} ⚡️'
 
-        pay_link = await call.bot.create_invoice_link(
+        await call.bot.send_invoice(
+            chat_id=call.message.chat.id,
             title=description,
             currency='XTR',
-            description=description,
+            description=f'При возникновении вопросов пишите сюда: {settings.SUPPORT_URL}',
             payload=f'upbalance:xtr:{amount}',
             prices=[LabeledPrice(label=description, amount=amount)],
-            provider_token=''
+            provider_token='',
+            reply_markup=keyboards.payment.pay(
+                src_amount=callback_data.amount,
+                currency_amount=amount,
+                currency_sign=currency_sign,
+                telegram_pay_button=True
+            )
         )
+        return
     else:
-        description = f'Пополнение баланса на {callback_data.amount} ⚡️ = {amount} {price_util.get_sign(currency)}'
+        description = f'Пополнение баланса на {callback_data.amount} ⚡️'
 
         pay = await payment_factory.create_payment(
             amount=callback_data.amount,
@@ -119,9 +128,14 @@ async def select_pay_method(
             metadata=dict(user_id=call.from_user.id)
         )
         pay_link = pay.url
-    await screens.payment.payment_link(pay_link, amount=callback_data.amount,
-                                       desription=description,
-                                       support_url=settings.SUPPORT_URL).answer(call, 'edit')
+        await screens.payment.payment_link(
+            link=pay_link,
+            src_amount=callback_data.amount,
+            currency_amount=amount,
+            currency_sign=currency_sign,
+            description=description,
+            support_url=settings.SUPPORT_URL
+        ).answer(call, 'edit')
 
 
 @router.pre_checkout_query()

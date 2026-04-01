@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import Callable, get_origin, Annotated
 
 import aiogram
@@ -8,16 +9,18 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaDocument, URLInputFile
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 import inspect
 from typing import get_args
 
+from config import settings
 from db.decorator import db_connect
 from db.repositories import UsersRepo, GenerationRequestsRepo
 from depends import fal_factory
 from mytypes import ActionType
 from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from utils import prepare_strings
 from utils.do_while import send_action_while_do_func
 from utils.inspect_func import inspect_generation_func, GenFuncInfo
 from utils.price import process_amount
@@ -468,6 +471,7 @@ async def start_generate(
     model_key = data['model_key']
     action_type = data['action_type']
 
+    model = models[model_key]
     fal_service = fal_factory.get_model_by_key(model_key)
     func: Callable = getattr(fal_service, action_type)
 
@@ -529,12 +533,12 @@ async def start_generate(
 
         updated_balance = await decrease()
 
-        await call.message.answer(
-            text=f'''
--{amount} ⚡️
-    
-<b>Текущий баланс:</b> {updated_balance} ⚡️'''
-        )
+        await screens.models.on_success_generation(
+            model_title=model.title,
+            action_type_title=prepare_strings.action_type(action_type),
+            amount=amount,
+            updated_balance=updated_balance
+        ).answer(call)
 
     else:
         request_id = await func(**kwargs)
@@ -551,37 +555,100 @@ async def start_generate(
 
 
 @async_retry(
-    attempts=50, delay=60,
-    exceptions=(asyncio.TimeoutError, asyncio.CancelledError, TelegramAPIError),
-    backoff=2
+    attempts=3, delay=60,
+    exceptions=(asyncio.TimeoutError, asyncio.CancelledError, TelegramAPIError)
 )
-async def send_result(res: dict, bot: aiogram.Bot, chat_id: int):
-    if 'images' in res:
-        if len(res['images']) > 1:
-            await bot.send_media_group(
+async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
+                      delay: int,
+                      attempt: int = 1):
+    try:
+        if 'images' in res:
+            if len(res['images']) > 1:
+                try:
+                    await bot.send_media_group(
+                        chat_id=chat_id,
+                        media=[InputMediaPhoto(media=URLInputFile(media),
+                                               caption=res.get('text')) for i, media in enumerate(res['images'])]
+                    )
+                except TelegramBadRequest as e:
+                    # Если фото слишком большое для отправки
+                    if 'too big for a photo' in e.message:
+                        # Получаем размер фото
+                        size_bytes = re.findall(r'file of size (\d+) bytes is too big for a photo', e.message)[0]
+
+                        if size_bytes < 50_000_000:  # 50_000_000 bytes = 50MB
+                            await bot.send_message(
+                                chat_id=chat_id,
+                                text='Изображение получилось слишком большого размера, '
+                                     'поэтому смогу отправить только файлами:'
+                            )
+                            await bot.send_media_group(
+                                chat_id=chat_id,
+                                media=[
+                                    InputMediaDocument(media=URLInputFile(media, filename=media.split('/')[-1]))
+                                    for i, media in enumerate(res['images'])
+                                ]
+                            )
+                            return
+                        else:
+                            await screens.models.on_failed_generation(
+                                support_url=settings.SUPPORT_URL, request_id=res.get('request_id')
+                            ).send_by_id(chat_id, bot)
+                            return
+
+                    else:
+                        raise e
+
+                await bot.send_media_group(
+                    chat_id=chat_id,
+                    media=[
+                        InputMediaDocument(media=URLInputFile(media, filename=media.split('/')[-1]))
+                        for i, media in enumerate(res['images'])
+                    ]
+                )
+            else:
+                try:
+                    await bot.send_photo(
+                        chat_id=chat_id,
+                        photo=URLInputFile(res['images'][0]),
+                        caption=res.get('text')
+                    )
+                except TelegramBadRequest as e:
+                    if 'too big for a photo' in e.message:
+                        size_bytes: int = re.findall(r'file of size (\d+) bytes is too big for a photo', e.message)[0]
+
+                        if size_bytes < 50_000_000:  # 50_000_000 bytes = 50MB
+                            await bot.send_message(
+                                chat_id=chat_id,
+                                text='Изображение получилось слишком большого размера, '
+                                     'поэтому смогу отправить только файлом:'
+                            )
+                            await bot.send_document(
+                                chat_id=chat_id,
+                                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1]),
+                                caption=res.get('text')
+                            )
+                            return
+                        else:
+                            await screens.models.on_failed_generation(
+                                support_url=settings.SUPPORT_URL, request_id=res.get('request_id')
+                            ).send_by_id(chat_id, bot)
+                            return
+                    else:
+                        raise e
+
+                await bot.send_document(
+                    chat_id=chat_id,
+                    document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1])
+                )
+        elif 'text' in res:
+            await bot.send_message(
                 chat_id=chat_id,
-                media=[InputMediaPhoto(media=URLInputFile(media),
-                                       caption=res.get('text')) for i, media in enumerate(res['images'])]
+                text=res['text']
             )
-            await bot.send_media_group(
-                chat_id=chat_id,
-                media=[
-                    InputMediaDocument(media=URLInputFile(media, filename=media.split('/')[-1]))
-                    for i, media in enumerate(res['images'])
-                ]
-            )
-        else:
-            await bot.send_photo(
-                chat_id=chat_id,
-                photo=URLInputFile(res['images'][0]),
-                caption=res.get('text')
-            )
-            await bot.send_document(
-                chat_id=chat_id,
-                document=URLInputFile(res['images'][0], filename=res['images'][0].split('/')[-1])
-            )
-    elif 'text' in res:
-        await bot.send_message(
-            chat_id=chat_id,
-            text=res['text']
-        )
+    except Exception as e:
+        await screens.models.on_failed_sending_generation(
+            support_url=settings.SUPPORT_URL, request_id=res.get('request_id'),
+            delay=delay
+        ).send_by_id(chat_id, bot)
+        raise e

@@ -33,7 +33,7 @@ class Seedvr(FALService):
         noise_scale: Annotated[float, Field(ge=0, le=1)] = 0.1
     ):
         image_url = await self.upload_image(images[0])
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='fal-ai/seedvr/upscale/image',
             arguments=dict(
                 image_url=image_url,
@@ -41,8 +41,10 @@ class Seedvr(FALService):
                 upscale_factor=upscale_factor,
                 noise_scale=noise_scale,
                 output_format='png'
-            )
+            ),
+            with_request_id=True
         )
         return {
-            'images': [res['image']['url']]
+            'images': [res['image']['url']],
+            'request_id': request_id
         }

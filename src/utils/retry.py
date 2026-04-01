@@ -1,15 +1,16 @@
 import asyncio
 import functools
 import logging
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
 
 def async_retry(
     attempts: int = 3,
-    delay: float = 1.0,
+    delay: int = 1,
     exceptions: tuple = (Exception,),
-    backoff: float = 1.0,
+    backoff: int = 1
 ):
     """
     Декоратор retry для асинхронных функций.
@@ -29,11 +30,11 @@ def async_retry(
 
             for attempt in range(1, attempts + 1):
                 try:
-                    return await func(*args, **kwargs)
+                    return await func(*args, delay=current_delay, attempt=attempt, **kwargs)
 
                 except exceptions as e:
                     if attempt == attempts:
-                        raise
+                        raise e
 
                     logger.error(
                         f"[async_retry] Ошибка: {e}. "

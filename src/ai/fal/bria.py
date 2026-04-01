@@ -17,15 +17,17 @@ class BriaFiboEdit(FALService):
         images: Annotated[list[Image], Field(max_length=1)]
     ):
         image_url = await self.upload_image(images[0])
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='bria/fibo-edit/edit',
             arguments=dict(
                 prompt=prompt,
                 image_url=image_url,
                 output_format='png'
-            )
+            ),
+            with_request_id=True
         )
         return {
             'images': [img['url'] for img in res['images']],
-            'price': self.get_price()
+            'price': self.get_price(),
+            'request_id': request_id
         }

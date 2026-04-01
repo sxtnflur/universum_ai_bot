@@ -1,4 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from bot import keyboards
 from bot.keyboards.base import create_list_kb
 from bot.keyboards.callback_datas.models import ScrollModelsCallback
 from bot.keyboards.callback_datas.payment import SelectAmountUpBalanceCallback, SelectPaymentMethodCallback
@@ -68,22 +69,22 @@ def payment_method(amount: float,
     )
 
 
-def payment_link(link: str, amount: float, desription: str,
+def payment_link(link: str,
+                 src_amount: float,
+                 currency_amount: float,
+                 currency_sign: str,
+                 description: str,
                  support_url: str):
     return ScreenDef(
-        text=f'<b>{desription}</b>\n'
-             f'При возникновении вопросов пишите сюда: {support_url}\n\n'
-             f'Для пополнения нажмите кнопку <b>Пополнить</b> и совершите оплату:\n\n',
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(
-                text='Пополнить',
-                url=link
-            )],
-            [InlineKeyboardButton(
-                text='Назад',
-                callback_data=SelectAmountUpBalanceCallback(amount=amount).pack()
-            )]
-        ])
+        text=f'<b>{description}</b>\n'
+             f'При возникновении вопросов пишите сюда: {support_url}',
+        reply_markup=keyboards.payment.pay(
+            src_amount=src_amount,
+            currency_amount=currency_amount,
+            currency_sign=currency_sign,
+            link=link,
+            telegram_pay_button=False
+        )
     )
 
 

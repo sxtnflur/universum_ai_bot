@@ -81,8 +81,9 @@ class GeneralNanoBananaService:
             args.update(aspect_ratio=ratio)
         if thinking_level:
             args.update(thinking_level=thinking_level)
-        res = await self.fal.request_with_polling(
-            f'fal-ai/{version}/edit', arguments=args
+        res, request_id = await self.fal.request_with_polling(
+            f'fal-ai/{version}/edit', arguments=args,
+            with_request_id=True
         )
         res_images = [image.get('url') for image in res.get('images')]
         return {
@@ -91,7 +92,8 @@ class GeneralNanoBananaService:
             'price': self.fal.get_price(
                 func='image_to_image',
                 kwargs=args
-            )
+            ),
+            'request_id': request_id
         }
 
 

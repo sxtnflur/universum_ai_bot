@@ -19,9 +19,12 @@ class FALService:
     def get_price(self, func: str, kwargs: dict) -> float:
         ...
 
-    async def request_with_polling(self, endpoint: str, arguments: dict):
+    async def request_with_polling(self, endpoint: str, arguments: dict,
+                                   with_request_id: bool = False):
         handler = await fal_client.submit_async(endpoint, arguments=arguments)
         result = await handler.get()
+        if with_request_id:
+            return result, handler.request_id
         return result
 
     async def request_with_webhook(self, endpoint: str, arguments: dict, webhook_url: str) -> str:

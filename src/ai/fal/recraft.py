@@ -16,25 +16,30 @@ class Recraft(FALService):
         images: Annotated[list[Image], Field(max_length=1)]
     ):
         image_url = await self.upload_image(images[0])
-        result = await self.request_with_polling(
+        result, request_id = await self.request_with_polling(
             endpoint='fal-ai/recraft/upscale/crisp',
             arguments=dict(
                 image_url=image_url
-            )
+            ),
+            with_request_id=True
         )
         return {'images': [result['image']['url']],
-                'price': self.get_price()}
+                'price': self.get_price(),
+                'request_id': request_id
+                }
 
     async def upscale_image_creative(
         self,
         images: Annotated[list[Image], Field(max_length=1)]
     ):
         image_url = await self.upload_image(images[0])
-        result = await self.request_with_polling(
+        result, request_id = await self.request_with_polling(
             endpoint='fal-ai/recraft/upscale/creative',
             arguments=dict(
                 image_url=image_url
-            )
+            ),
+            with_request_id=True
         )
         return {'images': [result['image']['url']],
-                'price': self.get_price()}
+                'price': self.get_price(),
+                'request_id': request_id}

@@ -31,7 +31,7 @@ class BytedanceSeedream5(FALService):
     ):
         image_size = get_image_size(ratio)
 
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='fal-ai/bytedance/seedream/v5/lite/text-to-image',
             arguments=dict(
                 prompt=prompt,
@@ -41,11 +41,13 @@ class BytedanceSeedream5(FALService):
                 },
                 num_images=num_images,
                 max_images=num_images
-            )
+            ),
+            with_request_id=True
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
-            'price': self.get_price(num_images=num_images)
+            'price': self.get_price(num_images=num_images),
+            'request_id': request_id
         }
 
     async def image_to_image(
@@ -57,7 +59,7 @@ class BytedanceSeedream5(FALService):
     ):
         image_size = get_image_size(ratio)
         image_urls = [await self.upload_image(image=image) for image in images]
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='fal-ai/bytedance/seedream/v5/lite/edit',
             arguments=dict(
                 image_urls=image_urls,
@@ -65,9 +67,11 @@ class BytedanceSeedream5(FALService):
                 image_size=image_size,
                 num_images=num_images,
                 max_images=num_images
-            )
+            ),
+            with_request_id=True
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
-            'price': self.get_price(num_images=num_images)
+            'price': self.get_price(num_images=num_images),
+            'request_id': request_id
         }

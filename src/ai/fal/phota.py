@@ -34,15 +34,17 @@ class Phota(FALService):
             aspect_ratio=ratio,
             output_format='png'
         )
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='fal-ai/phota',
-            arguments=args
+            arguments=args,
+            with_request_id=True
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
             'price': self.get_price(
                 func='text_to_image', kwargs=args
-            )
+            ),
+            'request_id': request_id
         }
 
     async def image_to_image(
@@ -63,13 +65,15 @@ class Phota(FALService):
                 aspect_ratio=ratio,
                 output_format='png'
             )
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='fal-ai/phota/edit',
-            arguments=args
+            arguments=args,
+            with_request_id=True
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
             'price': self.get_price(
                 func='text_to_image', kwargs=args
-            )
+            ),
+            'request_id': request_id
         }

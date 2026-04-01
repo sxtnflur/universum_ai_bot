@@ -18,16 +18,18 @@ class Reve(FALService):
         num_images: Annotated[int, Field(ge=1, le=4)] = 1,
     ):
         image_url = await self.upload_image(images[0])
-        res = await self.request_with_polling(
+        res, request_id = await self.request_with_polling(
             endpoint='fal-ai/reve/edit',
             arguments=dict(
                 image_url=image_url,
                 prompt=prompt,
                 num_images=num_images,
                 output_format='png'
-            )
+            ),
+            with_request_id=True
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
-            'price': self.get_price(num_images=num_images)
+            'price': self.get_price(num_images=num_images),
+            'request_id': request_id
         }
