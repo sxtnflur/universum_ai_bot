@@ -75,6 +75,7 @@ class ScreenDef:
                 await self.answer(event.message, type_send)
 
     async def send_by_id(self, user_id: int, bot: aiogram.Bot):
+        print(f'{self.reply_markup=}')
         if self.state is not None:
             await self.__get_fsm(bot.id, user_id).set_state(self.state)
 

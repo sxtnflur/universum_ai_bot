@@ -21,6 +21,12 @@ class Settings(BaseSettings):
 
     SECRET_TOKEN: str
 
+    S3_ENDPOINT_URL: str
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
+    S3_REGION: str
+    S3_BUCKET: str
+
     @property
     def BOT_URL(self):
         return f'https://t.me/{self.BOT_USERNAME}'

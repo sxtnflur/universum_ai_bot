@@ -4,6 +4,7 @@ from typing import Iterable
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from bot import keyboards
+from bot.keyboards.base import create_list_kb
 from bot.keyboards.callback_datas.models import ScrollModelsCallback, SelectRatioCallback, SelectResolutionCallback, \
     SelectInputNumberParamCallback
 from bot.screens.base import ScreenDef
@@ -130,17 +131,17 @@ def prepare_to_generation(
             callback_data='start-generate'
         )
     ]]
-    if ratio:
+    if ratio is not None:
         text += f'\n<b>Соотн. сторон:</b> {ratio}'
         ikb.append([InlineKeyboardButton(
             text=ratio, callback_data='select-ratio'
         )])
-    if resolution:
+    if resolution is not None:
         text += f'\n<b>Качество:</b> {resolution}'
         ikb.append([InlineKeyboardButton(
             text=resolution, callback_data='select-resolution'
         )])
-    if upscale_factor:
+    if upscale_factor is not None:
         text += f'\n<b>Коэффициент улучшения (Upscale Factor):</b> {upscale_factor}'
         ikb.append([InlineKeyboardButton(
             text=f'Коэф. улучш.: {upscale_factor}',
@@ -148,7 +149,7 @@ def prepare_to_generation(
                 param='upscale_factor'
             ).pack()
         )])
-    if noise_scale:
+    if noise_scale is not None:
         text += f'\n<b>Noise Scale (шкала шума):</b> {noise_scale}'
         ikb.append([InlineKeyboardButton(
             text=f'Noise Scale: {noise_scale}',
@@ -212,31 +213,69 @@ def on_success_generation(
 
 
 def _on_failed_gen(
-    request_id: str | None = None
+    request_id: str | None = None,
+    model_info: str | None = None
 ):
     text = f'<blockquote>'
-    if request_id is None:
+    if model_info is not None:
+        text += f'<b>Модель:</b> {model_info}'
+    if request_id is not None:
         text += f'<b>ID запроса:</b> <code>{request_id}</code>\n'
     text += f'<b>Время ошибки (UTC):</b> {datetime.datetime.utcnow().strftime("%H:%M %d.%m.%Y")}</blockquote>'
     return text
 
 
 def on_failed_sending_generation(
-    support_url: str, delay: int, request_id: str | None = None
+    support_url: str, delay: int,
+    model_info: str | None = None,
+    request_id: str | None = None,
+    last_attempt: bool = False
 ):
+    print(f'screens: {request_id=}')
     return ScreenDef(
         text=f'<b>Произошла ошибка при отправке результата генерации</b>\n'
-             f'Повторная попытка отправки будет через <i>{delay}</i> секунд\n'
+             + (f'Повторная попытка отправки будет через <i>{delay}</i> секунд\n' if not last_attempt
+                else '') +
              f'Если ждете слишком долго, перешлите это сообщение в поддержку: {support_url}\n\n'
-             f'{_on_failed_gen(request_id)}'
+             f'{_on_failed_gen(request_id, model_info)}'
     )
 
 
 def on_failed_generation(
-    request_id: str,
-    support_url: str
+    support_url: str,
+    request_id: str | None = None,
+    model_info: str | None = None
 ):
     return ScreenDef(
         text=f'<b>Произошла ошибка во время генерации. '
-             f'Пожалуйста, перешлите это сообщение в поддержку: {support_url}</b>\n\n{_on_failed_gen(request_id)}'
+             f'Пожалуйста, перешлите это сообщение в поддержку: {support_url}</b>\n\n'
+             f'{_on_failed_gen(request_id, model_info)}'
+    )
+
+
+def send_result_as_links(
+    links: list[str]
+):
+    if len(links) == 1:
+        return ScreenDef(
+            text='Результат генерации получился слишком многовесным, поэтому отправить его в Telegram не удалось. '
+                 'Пожалуйста, <b>скачайте по кнопкам ниже.</b>\n'
+                 'Ссылка перестанет работать через <b>24 часа</b>',
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text='Скачать', url=links[0]
+                )]
+            ])
+        )
+    return ScreenDef(
+        text='Результат генерации получился слишком многовесным, поэтому отправить его в Telegram не удалось. '
+             'Пожалуйста, <b>скачайте по кнопкам ниже.</b>\n'
+             'Ссылки перестанут работать через <b>24 часа</b>',
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=create_list_kb(
+            objs=links, get_btn=lambda link: InlineKeyboardButton(
+                text='Скачать файл #' + str(links.index(link)+1),
+                url=link
+            ),
+            width=5
+        ))
     )

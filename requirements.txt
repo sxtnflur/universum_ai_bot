@@ -1,3 +1,4 @@
+aioboto3
 aiogram
 aiohttp_socks
 fal_client
@@ -7,3 +8,4 @@ yookassa-async
 fastapi
 uvicorn
 Pillow
+types_aiobotocore_s3

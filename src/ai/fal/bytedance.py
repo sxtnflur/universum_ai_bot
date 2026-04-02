@@ -64,7 +64,10 @@ class BytedanceSeedream5(FALService):
             arguments=dict(
                 image_urls=image_urls,
                 prompt=prompt,
-                image_size=image_size,
+                image_size={
+                    'width': image_size[0],
+                    'height': image_size[1]
+                },
                 num_images=num_images,
                 max_images=num_images
             ),

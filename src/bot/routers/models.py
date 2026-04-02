@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+import io
 import re
 from typing import Callable, get_origin, Annotated
 
@@ -13,17 +15,16 @@ from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 import inspect
 from typing import get_args
 
+from annotated_types import Ge, Le
 from config import settings
 from db.decorator import db_connect
 from db.repositories import UsersRepo, GenerationRequestsRepo
-from depends import fal_factory
+from depends import fal_factory, files_manager
 from mytypes import ActionType
-from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils import prepare_strings
 from utils.do_while import send_action_while_do_func
 from utils.inspect_func import inspect_generation_func, GenFuncInfo
-from utils.price import process_amount
 from utils.retry import async_retry
 from .. import screens, keyboards
 
@@ -46,7 +47,7 @@ class GenerationStates(StatesGroup):
 @router.message(Command('models'))
 @router.message(F.text == MODELS)
 async def models_list_m(
-    message: Message
+        message: Message
 ):
     await models_list(
         message, ScrollModelsCallback()
@@ -73,7 +74,6 @@ async def select_model(
         callback_data: SelectModelCallback,
         state: FSMContext
 ):
-
     model = models[callback_data.key]
 
     if callback_data.action_type is None:
@@ -183,12 +183,12 @@ async def get_image(
 
 
 async def ask_next_param(
-    message: CallbackQuery | Message,
-    state: FSMContext,
-    model: str | None = None,
-    action_type: ActionType | None = None,
-    func_info: GenFuncInfo | None = None,
-    fsm_data: dict | None = None
+        message: CallbackQuery | Message,
+        state: FSMContext,
+        model: str | None = None,
+        action_type: ActionType | None = None,
+        func_info: GenFuncInfo | None = None,
+        fsm_data: dict | None = None
 ):
     if not fsm_data:
         fsm_data = await state.get_data()
@@ -225,19 +225,18 @@ async def ask_next_param(
     kwargs = {}
     for k, v in func_info.arguments.items():
         val = fsm_data.get(k)
-        if not val:
+        if val is None:
             val = func_info.arguments[k].default
         kwargs[k] = val
 
     if 'images' in kwargs:
         kwargs['images'] = [Image.open(await message.bot.download(file=img_file_id))
-         for img_file_id in kwargs.get('images')]
+                            for img_file_id in kwargs.get('images')]
 
     fal_service = fal_factory.get_model_by_key(model.key)
     price: float = fal_service.get_price(
         func=func_info.func, kwargs=kwargs
     )
-
     price_description: str | None = fal_service.get_price_description(func_info.func, kwargs)
 
     await screens.models.prepare_to_generation(
@@ -273,8 +272,8 @@ async def select_ratio(call: CallbackQuery, state: FSMContext):
 
 @router.callback_query(SelectRatioCallback.filter())
 async def update_ratio(
-    call: CallbackQuery, callback_data: SelectRatioCallback,
-    state: FSMContext
+        call: CallbackQuery, callback_data: SelectRatioCallback,
+        state: FSMContext
 ):
     await state.update_data(ratio=callback_data.ratio.replace('-', ':'))
     data = await state.get_data()
@@ -314,8 +313,8 @@ async def select_resolution(call: CallbackQuery, state: FSMContext):
 
 @router.callback_query(SelectResolutionCallback.filter())
 async def update_resolution(
-    call: CallbackQuery, callback_data: SelectResolutionCallback,
-    state: FSMContext
+        call: CallbackQuery, callback_data: SelectResolutionCallback,
+        state: FSMContext
 ):
     await state.update_data(resolution=callback_data.resolution)
     data = await state.get_data()
@@ -334,7 +333,7 @@ async def update_resolution(
 
 @router.callback_query(F.data == 'select-num_images')
 async def select_num_images(
-    call: CallbackQuery, state: FSMContext
+        call: CallbackQuery, state: FSMContext
 ):
     data = await state.get_data()
     model_key = data['model_key']
@@ -349,7 +348,7 @@ async def select_num_images(
             num_images = func_info.arguments['num_images'].default
 
         values = [v for v in
-                  range(func_info.min_input_num_images, func_info.max_input_num_images+1)
+                  range(func_info.min_input_num_images, func_info.max_input_num_images + 1)
                   if v != num_images]
         await call.message.edit_reply_markup(
             reply_markup=keyboards.models.select_num_images(
@@ -360,9 +359,9 @@ async def select_num_images(
 
 @router.callback_query(SelectNumImagesCallback.filter())
 async def select_num_images(
-    call: CallbackQuery,
-    callback_data: SelectNumImagesCallback,
-    state: FSMContext
+        call: CallbackQuery,
+        callback_data: SelectNumImagesCallback,
+        state: FSMContext
 ):
     await state.update_data(num_images=callback_data.num_images)
     data = await state.get_data()
@@ -379,6 +378,22 @@ async def select_num_images(
     )
 
 
+def get_input_num_param_filters(
+        func_info: GenFuncInfo, param_name: str
+) -> dict[str, ...]:
+    annotation = get_args(func_info.arguments[param_name].annotation)
+    type_ = annotation[0]
+
+    filters = {'min': None, 'max': None, 'only_int': False}
+    for v in annotation[1].metadata:
+        if isinstance(v, Ge):
+            filters['min'] = v.ge
+        elif isinstance(v, Le):
+            filters['max'] = v.le
+    filters['only_int'] = isinstance(type_, int)
+    return filters
+
+
 @router.callback_query(SelectInputNumberParamCallback.filter())
 async def select_input_num_param(
         call: CallbackQuery,
@@ -391,39 +406,30 @@ async def select_input_num_param(
     fal_service = fal_factory.get_model_by_key(model_key)
     func: Callable = getattr(fal_service, action_type)
     func_info = inspect_generation_func(func)
-    annotation = get_args(func_info.arguments[callback_data.param].annotation)
-    type_ = annotation[0]
-
-    min_val = getattr(annotation[1].metadata, 'ge', None)
-    max_val = getattr(annotation[1].metadata, 'le', None)
-    only_int = isinstance(type_, int)
-
-    if min_val:
-        text = f'Введите значение от {min_val}'
-        if max_val:
-            text += f' до {max_val}'
-    elif max_val:
-        text = f'Введите значение до {max_val}'
+    filters = get_input_num_param_filters(func_info, callback_data.param)
+    if filters['min'] is not None:
+        text = f'Введите значение от {filters["min"]}'
+        if 'max' in filters:
+            text += f' до {filters["max"]}'
+    elif filters['max'] is not None:
+        text = f'Введите значение до {filters["max"]}'
     else:
         text = 'Введите значение'
 
-    if only_int:
+    if filters['only_int']:
         text += ' (число должно быть круглым: 1/2/3 <s>1.5</s>)'
     else:
         text += ' (число может быть нецелым: 1/1.1/1.2/.../2/2.1/...)'
     await call.message.answer(text)
     await state.update_data(
-        wait_param=callback_data.param,
-        wait_param_min=min_val,
-        wait_param_max=max_val,
-        wait_param_only_int=only_int
+        wait_param=callback_data.param
     )
     await state.set_state(GenerationStates.input_num_param)
 
 
 @router.message(GenerationStates.input_num_param)
 async def input_num_param(
-    message: Message, state: FSMContext
+        message: Message, state: FSMContext
 ):
     try:
         val = float(message.text)
@@ -432,26 +438,30 @@ async def input_num_param(
         return
 
     data = await state.get_data()
-    if data.get('only_int'):
+    param = data['wait_param']
+    model_key = data['model_key']
+    action_type = data['action_type']
+    fal_service = fal_factory.get_model_by_key(model_key)
+    func: Callable = getattr(fal_service, action_type)
+    func_info = inspect_generation_func(func)
+    filters = get_input_num_param_filters(func_info, param)
+    if filters['only_int']:
         try:
             val = int(val)
         except:
             await message.answer('Можно ввести только целое число')
             return
 
-    if data.get('wait_param_min') and val < data.get('wait_param_min'):
-        await message.answer(f'Минимальное значение: {data.get("wait_param_min")}')
+    if filters['min'] is not None and val < filters['min']:
+        await message.answer(f'Минимальное значение: {filters["min"]}')
         return
 
-    if data.get('wait_param_max') and val > data.get('wait_param_max'):
-        await message.answer(f'Максимальное значение: {data.get("wait_param_max")}')
+    if filters['max'] is not None and val > filters["max"]:
+        await message.answer(f'Максимальное значение: {filters["max"]}')
         return
 
     data[data['wait_param']] = val
     del data['wait_param']
-    del data['wait_param_min']
-    del data['wait_param_max']
-    del data['wait_param_only_int']
 
     await state.set_state(None)
     await state.update_data(data)
@@ -477,8 +487,16 @@ async def start_generate(
 
     func_info = inspect_generation_func(func)
 
+    f = inspect.signature(func)
+    kwargs = {k: v for k, v in data.items() if k in f.parameters}
+    if 'images' in kwargs:
+        kwargs.update(
+            images=[Image.open(await call.bot.download(file=img_file_id))
+                    for img_file_id in kwargs.get('images')]
+        )
+
     amount: float = round(fal_service.get_price(
-        func=func_info.func, kwargs=data
+        func=func_info.func, kwargs=kwargs
     ), 2)
 
     @db_connect()
@@ -489,14 +507,6 @@ async def start_generate(
     if balance < amount:
         await screens.models.not_enough_balance(balance, amount).answer(call)
         return
-
-    f = inspect.signature(func)
-    kwargs = {k: v for k, v in data.items() if k in f.parameters}
-    if 'images' in kwargs:
-        kwargs.update(
-            images=[Image.open(await call.bot.download(file=img_file_id))
-                    for img_file_id in kwargs.get('images')]
-        )
 
     if not fal_service.use_webhook:
         if action_type.endswith('image'):
@@ -521,7 +531,8 @@ async def start_generate(
         except:
             pass
 
-        await send_result(res, bot=call.bot, chat_id=call.message.chat.id)
+        await send_result(res, bot=call.bot, chat_id=call.message.chat.id,
+                          model_info=f'{model.title} ({prepare_strings.action_type(action_type)})')
 
         @db_connect()
         async def decrease(db: AsyncSession):
@@ -554,11 +565,16 @@ async def start_generate(
         await call.message.answer('Подождите немного, генерация займет некоторое время...')
 
 
+attempts = 3
+
+
 @async_retry(
-    attempts=3, delay=60,
+    attempts=attempts, delay=60,
     exceptions=(asyncio.TimeoutError, asyncio.CancelledError, TelegramAPIError)
 )
 async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
+                      model_info: str,
+                      *,
                       delay: int,
                       attempt: int = 1):
     try:
@@ -574,7 +590,7 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
                     # Если фото слишком большое для отправки
                     if 'too big for a photo' in e.message:
                         # Получаем размер фото
-                        size_bytes = re.findall(r'file of size (\d+) bytes is too big for a photo', e.message)[0]
+                        size_bytes = int(re.findall(r'file of size (\d+) bytes is too big for a photo', e.message)[0])
 
                         if size_bytes < 50_000_000:  # 50_000_000 bytes = 50MB
                             await bot.send_message(
@@ -591,9 +607,10 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
                             )
                             return
                         else:
-                            await screens.models.on_failed_generation(
-                                support_url=settings.SUPPORT_URL, request_id=res.get('request_id')
-                            ).send_by_id(chat_id, bot)
+                            await send_result_as_my_links(
+                                bot=bot, chat_id=chat_id,
+                                images=res['images']
+                            )
                             return
 
                     else:
@@ -615,8 +632,7 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
                     )
                 except TelegramBadRequest as e:
                     if 'too big for a photo' in e.message:
-                        size_bytes: int = re.findall(r'file of size (\d+) bytes is too big for a photo', e.message)[0]
-
+                        size_bytes = int(re.findall(r'file of size (\d+) bytes is too big for a photo', e.message)[0])
                         if size_bytes < 50_000_000:  # 50_000_000 bytes = 50MB
                             await bot.send_message(
                                 chat_id=chat_id,
@@ -630,9 +646,10 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
                             )
                             return
                         else:
-                            await screens.models.on_failed_generation(
-                                support_url=settings.SUPPORT_URL, request_id=res.get('request_id')
-                            ).send_by_id(chat_id, bot)
+                            await send_result_as_my_links(
+                                bot=bot, chat_id=chat_id,
+                                images=res['images']
+                            )
                             return
                     else:
                         raise e
@@ -648,7 +665,31 @@ async def send_result(res: dict, bot: aiogram.Bot, chat_id: int,
             )
     except Exception as e:
         await screens.models.on_failed_sending_generation(
-            support_url=settings.SUPPORT_URL, request_id=res.get('request_id'),
-            delay=delay
+            support_url=settings.SUPPORT_URL,
+            delay=delay,
+            model_info=model_info,
+            request_id=res.get('request_id'),
+            last_attempt=attempt == attempts
         ).send_by_id(chat_id, bot)
         raise e
+
+
+async def send_result_as_my_links(
+        bot: aiogram.Bot,
+        chat_id: int,
+        images: list[str]
+):
+    session = await bot.session.create_session()
+    images_ = []
+    for i, img in enumerate(images):
+        key = (f'universumaibot/tmp/{chat_id}/' +
+               str(round(datetime.datetime.utcnow().timestamp())) +
+               '_' + img.split('/')[-1])
+        await files_manager.set(
+            fileobj=io.BytesIO(await (await session.get(img)).read()),
+            key=key
+        )
+        images_.append(
+            files_manager.create_url(key)
+        )
+    await screens.models.send_result_as_links(images_).send_by_id(chat_id, bot)

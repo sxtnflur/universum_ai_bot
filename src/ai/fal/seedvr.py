@@ -19,9 +19,10 @@ class Seedvr(FALService):
                f'{data["cost"]} = {round(data["megapixels"], 2)}mp x {self.price_per_one} '
 
     def get_price(self, func: str, kwargs: dict) -> float:
+        print(f'{kwargs=}')
         data = calculate_upscale_cost(
             image=kwargs['images'][0],
-            upscale_factor=kwargs['upscale_factor'],
+            upscale_factor=kwargs.get('upscale_factor', 2),
             price_per_mp=self.price_per_one
         )
         return data['cost']
@@ -44,6 +45,7 @@ class Seedvr(FALService):
             ),
             with_request_id=True
         )
+        print(f"{request_id=}")
         return {
             'images': [res['image']['url']],
             'request_id': request_id
