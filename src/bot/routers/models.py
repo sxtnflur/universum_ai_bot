@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 import io
+import json
+import logging
 import re
 from typing import Callable, get_origin, Annotated
 
@@ -20,6 +22,7 @@ from config import settings
 from db.decorator import db_connect
 from db.repositories import UsersRepo, GenerationRequestsRepo
 from depends import fal_factory, files_manager
+from fal_client import FalClientHTTPError
 from mytypes import ActionType
 from sqlalchemy.ext.asyncio import AsyncSession
 from utils import prepare_strings
@@ -36,6 +39,10 @@ from bot.menu import MODELS
 
 router = Router()
 router.message.middleware(MediaMiddleware(2))
+
+
+logger = logging.getLogger(__name__)
+
 
 
 class GenerationStates(StatesGroup):
@@ -522,17 +529,32 @@ async def start_generate(
 
         wait_msg = await call.message.answer('Подождите немного, генерация займет некоторое время...')
 
-        res = await send_action_while_do_func(
-            coroutine=func(**kwargs), chat_id=call.message.chat.id,
-            bot=call.bot, action=action
-        )
+        model_info = f'{model.title} ({prepare_strings.action_type(action_type)})'
+        request_id: str | None = None
+        try:
+            res = await send_action_while_do_func(
+                coroutine=func(**kwargs), chat_id=call.message.chat.id,
+                bot=call.bot, action=action
+            )
+            request_id = res.get('request_id')
+        except Exception as e:
+            await screens.models.on_failed_generation(
+                support_url=settings.SUPPORT_URL,
+                request_id=request_id,
+                model_info=model_info
+            ).answer(call)
+            raise e
+
         try:
             await wait_msg.delete()
         except:
             pass
 
-        await send_result(res, bot=call.bot, chat_id=call.message.chat.id,
-                          model_info=f'{model.title} ({prepare_strings.action_type(action_type)})')
+        await send_result(
+            res,
+            bot=call.bot, chat_id=call.message.chat.id,
+            model_info=model_info
+        )
 
         @db_connect()
         async def decrease(db: AsyncSession):
