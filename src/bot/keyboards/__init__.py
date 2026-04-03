@@ -1,1 +1,1 @@
-from . import models, payment
+from . import models, payment, menu

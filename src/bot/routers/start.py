@@ -7,7 +7,8 @@ from data import models
 from db.decorator import db_connect
 from db.repositories import UsersRepo
 from sqlalchemy.ext.asyncio import AsyncSession
-from .models import select_model
+from .menu import all_menu_commands
+from .models import select_model, GenerationStates
 from ..keyboards.callback_datas.models import SelectModelCallback
 
 router = Router()
@@ -23,10 +24,15 @@ async def start(
 ):
     await state.clear()
 
-    start_balance = 10
+    start_balance = 15
 
-    if not await UsersRepo(db).exists(id=message.from_user.id):
+    user_exists = await UsersRepo(db).exists(id=message.from_user.id)
+    if not user_exists:
         await screens.start.first_start(start_balance).answer(message)
+        model = models['nano_banana_2']
+        await state.update_data(model_key=model.key,
+                                action_type=model.types[0])
+        await state.set_state(GenerationStates.prompt)
 
     utm = None
     if command and command.args:
@@ -47,19 +53,14 @@ async def start(
         on_conflict=['id']
     )
 
-    if command and command.args:
-        if await process_command_start(
-            command.args, message, state
-        ):
-            return
+    if user_exists:
+        if command and command.args:
+            if await process_command_start(
+                command.args, message, state
+            ):
+                return
 
-    await screens.start.menu().answer(message)
-
-    # await screens.models.models_list(
-    #     models=list(models.values())[0:10],
-    #     page=0,
-    #     limit=10
-    # ).answer(message)
+        await screens.start.menu().answer(message)
 
 
 async def process_command_start(payload: str, message: Message,
@@ -79,5 +80,15 @@ async def process_command_start(payload: str, message: Message,
                 action_type=action_type
             ),
             state=state
+        )
+        return True
+
+    elif payload.startswith('command-'):
+        await all_menu_commands(
+            message=message,
+            state=state,
+            command=CommandObject(
+                command=payload.split('-')[1]
+            )
         )
         return True

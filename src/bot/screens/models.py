@@ -57,7 +57,7 @@ def models_list(models: list[Model],
 
 def __settings(
     model: Model,
-    action_type: ActionType,
+    action_type: ActionType
 ):
     text = f'''
 <blockquote><b>Модель:</b> {model.title}
@@ -66,7 +66,9 @@ def __settings(
     other_types = types_to_strings(model.types, model.key, exclude=(action_type,))
     if other_types:
         text += '\n\n<b>Другие типы генерации:</b>\n' + other_types
-    return text + '\n\n<b>Выбрать другую модель:</b> /models\n<b>В меню:</b> /start' + '</blockquote>'
+    return text + f'\n\n<a href="t.me/{settings.BOT_USERNAME}?start=command-models">' \
+                  f'Выбрать другую модель</a> | ' \
+                  f'<a href="t.me/{settings.BOT_USERNAME}?start=1">В меню</a>' + '</blockquote>'
 
 
 def ask_prompt(
@@ -117,6 +119,8 @@ def prepare_to_generation(
     noise_scale: float | None = None,
 
     price_description: str | None = None,
+
+    show_additional_settings: bool = False,
     **kwargs
 ):
     text = f'<b>Модель:</b> {model.title}'
@@ -124,6 +128,8 @@ def prepare_to_generation(
         text += f'\n<b>Промпт:</b> {textwrap.shorten(prompt, width=100)}'
     if images_count:
         text += f'\n<b>Фото:</b> {images_count}'
+    if show_additional_settings:
+        text += '\n'
 
     ikb = [[
         InlineKeyboardButton(
@@ -131,17 +137,17 @@ def prepare_to_generation(
             callback_data='start-generate'
         )
     ]]
-    if ratio is not None:
+    if ratio is not None and show_additional_settings:
         text += f'\n<b>Соотн. сторон:</b> {ratio}'
         ikb.append([InlineKeyboardButton(
             text=ratio, callback_data='select-ratio'
         )])
-    if resolution is not None:
+    if resolution is not None and show_additional_settings:
         text += f'\n<b>Качество:</b> {resolution}'
         ikb.append([InlineKeyboardButton(
             text=resolution, callback_data='select-resolution'
         )])
-    if upscale_factor is not None:
+    if upscale_factor is not None and show_additional_settings:
         text += f'\n<b>Коэффициент улучшения (Upscale Factor):</b> {upscale_factor}'
         ikb.append([InlineKeyboardButton(
             text=f'Коэф. улучш.: {upscale_factor}',
@@ -149,7 +155,7 @@ def prepare_to_generation(
                 param='upscale_factor'
             ).pack()
         )])
-    if noise_scale is not None:
+    if noise_scale is not None and show_additional_settings:
         text += f'\n<b>Noise Scale (шкала шума):</b> {noise_scale}'
         ikb.append([InlineKeyboardButton(
             text=f'Noise Scale: {noise_scale}',
@@ -158,23 +164,31 @@ def prepare_to_generation(
             ).pack()
         )])
 
-    if max_num_images > 1:
+    if max_num_images > 1 and show_additional_settings:
         ikb.append([InlineKeyboardButton(
             text=f'Количество фото: {num_images}',
             callback_data='select-num_images'
         )])
+        text += f'\n<b>Количество фото:</b> {num_images}'
 
-    text += f'\n<b>Количество фото:</b> {num_images}'
     text += f'\n\n<b>Стоимость:</b> {round(price, 2)} ⚡️'
     if num_images > 1:
         text += f' <i>({round(price / num_images, 2)} ⚡️ за каждую)</i>'
 
     if price_description:
-        text += f'\n<blockquote><b>Как рассчитывается цена?</b>\n{price_description}</blockquote>'
+        text += f'\n<blockquote expanded="true"><b>Как рассчитывается цена?</b>\n{price_description}</blockquote>'
 
-    text += '\n\n<tg-emoji emoji-id="5447644880824181073">⚠️</tg-emoji> ' \
-            'Вы можете сразу начать генерацию по кнопке "Сгенерировать" или указать доп. настройки кнопками ниже'
-    text += '\n<blockquote>Выбрать другую модель: /models\nВ меню: /start</blockquote>'
+    text += f'\n\n<a href="t.me/{settings.BOT_USERNAME}?start=command-models">Выбрать другую модель</a> | ' \
+            f'<a href="t.me/{settings.BOT_USERNAME}?start=1">В меню</a>'
+
+    ikb.append([
+        InlineKeyboardButton(
+            text='👁 Расшир. настройки' if show_additional_settings
+            else '🙈 Расшир. настройки',
+            callback_data='switch-show-settings'
+        )
+    ])
+
     return ScreenDef(
         text=text,
         reply_markup=InlineKeyboardMarkup(inline_keyboard=ikb)
@@ -208,7 +222,8 @@ def on_success_generation(
 <tg-emoji emoji-id="5206607081334906820">✔️</tg-emoji> Генерация для модели <b>{model_title} ({action_type_title})</b> выполнена
 
 <b>Генерация стоила:</b> {amount} ⚡️
-<b>Текущий баланс:</b> {updated_balance} ⚡️'''
+<b>Текущий баланс:</b> {updated_balance} ⚡️''',
+        reply_markup=keyboards.menu.menu()
     )
 
 

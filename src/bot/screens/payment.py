@@ -4,13 +4,16 @@ from bot.keyboards.base import create_list_kb
 from bot.keyboards.callback_datas.models import ScrollModelsCallback
 from bot.keyboards.callback_datas.payment import SelectAmountUpBalanceCallback, SelectPaymentMethodCallback
 from bot.screens.base import ScreenDef
+from config import settings
 from utils import price as price_utils
 
 
 def balance(balance: float):
     return ScreenDef(
         text=f'<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji> '
-             f'<b>Ваш баланс:</b> {balance} ⚡️\n<blockquote>Пополнить баланс: /buy\nВ меню: /start</blockquote>',
+             f'<b>Ваш баланс:</b> {balance} ⚡️\n\n'
+             f'<a href="t.me/{settings.BOT_USERNAME}?start=command-buy">Пополнить баланс</a> | '
+             f'<a href="t.me/{settings.BOT_USERNAME}?start=1">В меню</a>',
     )
 
 
@@ -32,8 +35,9 @@ def main():
              f'1 ⚡️= 1 руб\n\n'
              f'1 ⚡️= 50 ⭐ Telegram Stars\n'
              f'<i>Для оплаты Telegram Stars сумма пополнения ⚡️ '
-             f'должна быть больше 200 и кратна 50 (200/250/300/350 и т.д.)</i>\n'
-             '\n<blockquote>Узнать мой баланс: /balance\nВ меню: /start</blockquote>',
+             f'должна быть больше 200 и кратна 50 (200/250/300/350 и т.д.)</i>\n\n'
+             f'<a href="t.me/{settings.BOT_USERNAME}?start=command-balance">Узнать мой баланс</a> | '
+             f'<a href="t.me/{settings.BOT_USERNAME}?start=1">В меню</a>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=ikb)
     )
 

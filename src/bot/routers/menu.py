@@ -5,8 +5,6 @@ from aiogram.types import Message
 from bot import menu
 from bot.commands import commands
 
-
-from .start import start
 from .support import support
 from .payment import buy, balance
 from .models import models_list_m
@@ -14,15 +12,13 @@ from .models import models_list_m
 router = Router()
 
 
-@router.message(Command(commands=(command.command for command in commands)))
+@router.message(Command(commands=(command.command for command in commands if command.command != 'start')))
 async def all_menu_commands(
     message: Message,
     state: FSMContext,
     command: CommandObject | None = None
 ):
     await state.clear()
-    if command.command == 'start':
-        return await start(message, command, state)
     if command.command == 'models':
         return await models_list_m(message)
     if command.command == 'support':

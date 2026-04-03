@@ -252,8 +252,23 @@ async def ask_next_param(
         images_count=len(fsm_data.get('images')) if fsm_data.get('images') else None,
         price=price,
         price_description=price_description,
+        show_additional_settings=fsm_data.get('show_additional_settings'),
         **kwargs
     ).answer(message, 'edit')
+
+
+@router.callback_query(F.data == 'switch-show-settings')
+async def show_settings(
+    call: CallbackQuery, state: FSMContext
+):
+    data = await state.get_data()
+    data['show_additional_settings'] = not data.get('show_additional_settings', False)
+    await state.update_data(data)
+    await ask_next_param(
+        call,
+        state=state,
+        fsm_data=data
+    )
 
 
 @router.callback_query(F.data == 'select-ratio')

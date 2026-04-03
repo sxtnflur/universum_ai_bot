@@ -8,8 +8,8 @@ from .admin import router as admin
 
 
 __routers__ = (
-    menu_router,
     start_router,
+    menu_router,
     support_router,
     payment_router,
     models_router,

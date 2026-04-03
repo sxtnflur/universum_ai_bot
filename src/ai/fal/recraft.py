@@ -8,7 +8,7 @@ from utils.price import process_amount
 class Recraft(FALService):
     price_per_one = process_amount(0.004)
 
-    def get_price(self, *args, **kwargs) -> float:
+    def get_price(self, func: str, kwargs: dict) -> float:
         return self.price_per_one * kwargs.get('num_images', 1)
 
     async def upscale_image_crisp(
@@ -24,7 +24,6 @@ class Recraft(FALService):
             with_request_id=True
         )
         return {'images': [result['image']['url']],
-                'price': self.get_price(),
                 'request_id': request_id
                 }
 
@@ -41,5 +40,4 @@ class Recraft(FALService):
             with_request_id=True
         )
         return {'images': [result['image']['url']],
-                'price': self.get_price(),
                 'request_id': request_id}

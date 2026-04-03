@@ -8,7 +8,7 @@ from .base import FALService
 class Reve(FALService):
     price_per_one = process_amount(0.04)
 
-    def get_price(self, **kwargs):
+    def get_price(self, func: str, kwargs: dict):
         return self.price_per_one * kwargs.get('num_images', 1)
 
     async def image_to_image(
@@ -30,6 +30,5 @@ class Reve(FALService):
         )
         return {
             'images': [img.get('url') for img in res.get('images')],
-            'price': self.get_price(num_images=num_images),
             'request_id': request_id
         }

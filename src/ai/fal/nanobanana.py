@@ -100,7 +100,7 @@ class GeneralNanoBananaService:
 class NanoBanana(FALService):
     price_per_one = process_amount(0.039)
 
-    def get_price(self, **kwargs):
+    def get_price(self, func: str, kwargs: dict):
         return self.price_per_one * kwargs.get('num_images', 1)
 
     async def text_to_image(
@@ -139,7 +139,8 @@ class NanoBananaPro(FALService):
 
     def get_price_description(self, *args, **kwargs) -> str:
         return f'За одно изображение с качеством 1K или 2K - {self.price_per_one}, ' \
-               f'за 4К - удвоенная цена ({self.price_per_one*2})'
+               f'за 4К - {self.price_per_one*2}\n' \
+               f'Качество можно изменить в расшир. настройках'
 
     def get_price(self, func: str, kwargs: dict) -> float:
         price = self.price_per_one
@@ -185,7 +186,8 @@ class NanoBanana2(FALService):
 
     def get_price_description(self, *args, **kwargs) -> str:
         return f'За одно изображение с качеством 1K - {self.price_per_one}, ' \
-               f'2K - {self.price_per_one*1.5}, 4K - {self.price_per_one*2}, 0.5K - {self.price_per_one*0.75}'
+               f'2K - {self.price_per_one*1.5}, 4K - {self.price_per_one*2}, 0.5K - {self.price_per_one*0.75}' \
+               f'\nКачество можно изменить в расшир. настройках'
 
     def get_price(self, func: str, kwargs: dict):
         price = self.price_per_one
