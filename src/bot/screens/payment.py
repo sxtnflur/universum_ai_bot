@@ -70,7 +70,7 @@ def payment_method(amount: float,
                 text=_('Другой способ оплаты'),
                 url=pay_username_url.replace('@', 'https://t.me/') + f'?text=Здравствуйте! Хочу купить {amount} ⚡️'
                                                                      f'в @{bot_username}'
-                                                                     f'\nМне подошли данные способы оплаты'
+                                                                     f'\nМне не подошли данные способы оплаты'
             )],
             [InlineKeyboardButton(
                 text=_('Назад'),
