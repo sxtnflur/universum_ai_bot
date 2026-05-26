@@ -7,7 +7,7 @@ from utils.price import process_amount
 
 
 class Seedvr(FALService):
-    price_per_one = process_amount(0.001)
+    price_per_one = process_amount(0.001, min_val=0, round_digits=5)
 
     def get_price_description(self, func: str, kwargs: dict) -> str:
         data = calculate_upscale_cost(
@@ -16,7 +16,7 @@ class Seedvr(FALService):
             price_per_mp=self.price_per_one
         )
         return f'Цена за 1 мегапиксель: {self.price_per_one}\n' \
-               f'{data["cost"]} = {round(data["megapixels"], 2)}mp x {self.price_per_one} '
+               f'{data["cost"]} ≈ {round(data["megapixels"], 2)}mp x {self.price_per_one} '
 
     def get_price(self, func: str, kwargs: dict) -> float:
         print(f'{kwargs=}')

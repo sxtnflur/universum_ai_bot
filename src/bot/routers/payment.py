@@ -33,13 +33,19 @@ async def balance(message: Message, *, db: AsyncSession):
 @router.message(Command('buy'))
 @router.message(F.text == BUY)
 async def buy(message: Message, state: FSMContext):
-    await screens.payment.main().answer(message)
+    await screens.payment.main(
+        exchange_rate_rub=settings.EXCHANGE_RATE_RUB,
+        exchange_rate_xtr=settings.EXCHANGE_RATE_XTR
+    ).answer(message)
     await state.set_state(BuyStates.amount)
 
 
 @router.callback_query(F.data == 'buy')
 async def buy_call(call: CallbackQuery, state: FSMContext):
-    await screens.payment.main().answer(call, 'edit')
+    await screens.payment.main(
+        exchange_rate_rub=settings.EXCHANGE_RATE_RUB,
+        exchange_rate_xtr=settings.EXCHANGE_RATE_XTR
+    ).answer(call, 'edit')
     await state.set_state(BuyStates.amount)
 
 
@@ -47,7 +53,8 @@ async def buy_call(call: CallbackQuery, state: FSMContext):
 async def select_amount(
     call: CallbackQuery, callback_data: SelectAmountUpBalanceCallback
 ):
-    await screens.payment.payment_method(callback_data.amount, settings.SUPPORT_URL).answer(call, 'edit')
+    await screens.payment.payment_method(callback_data.amount, settings.SUPPORT_URL,
+                                         bot_username=settings.BOT_USERNAME).answer(call, 'edit')
 
 
 @router.callback_query(F.data == 'balance-up-select-amount-myamount')
@@ -62,16 +69,17 @@ async def input_amount(
     message: Message, state: State
 ):
     try:
-        amount = float(message.text)
+        amount = int(message.text)
     except:
-        await message.answer('Введите сумму пополнения (число)\n\nВ меню - /start')
+        await message.answer('Введите сумму пополнения (целое число)\n\nВ меню - /start')
         return
 
     if amount < settings.MIN_AMOUNT_UP_BALANCE:
         await message.answer(f'<b>Минимальная сумма пополнения:</b> {settings.MIN_AMOUNT_UP_BALANCE}')
         return
 
-    await screens.payment.payment_method(amount, settings.SUPPORT_URL).answer(message)
+    await screens.payment.payment_method(amount, settings.SUPPORT_URL,
+                                         bot_username=settings.BOT_USERNAME).answer(message)
 
 
 @router.callback_query(SelectPaymentMethodCallback.filter())
@@ -118,10 +126,10 @@ async def select_pay_method(
         )
         return
     else:
-        description = f'Пополнение баланса на {callback_data.amount} ⚡️'
+        description = f'Пополнение баланса на {amount} ⚡️'
 
         pay = await payment_factory.create_payment(
-            amount=callback_data.amount,
+            amount=amount,
             description=description,
             payment_method=callback_data.method,
             session=await call.bot.session.create_session(),

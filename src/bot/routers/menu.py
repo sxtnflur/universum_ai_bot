@@ -18,6 +18,7 @@ async def all_menu_commands(
     state: FSMContext,
     command: CommandObject | None = None
 ):
+    await message.copy_to(message.chat.id)
     await state.clear()
     if command.command == 'models':
         return await models_list_m(message)

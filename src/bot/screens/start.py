@@ -1,13 +1,13 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.i18n import gettext as _
+
 from bot import keyboards
 from bot.screens.base import ScreenDef
-from bot.menu import MODELS, BALANCE, BUY, SUPPORT
 from config import settings
 
 
 def first_start(start_balance: float):
     return ScreenDef(
-        text=f'''
+        text=_(f'''
 Привет! Я - бот для создания изображений в любой популярной нейросети
 
 ❗️ <b>Без обязательных подписок
@@ -17,7 +17,7 @@ def first_start(start_balance: float):
 Твой баланс: <b>{start_balance}</b> ⚡️
 
 <b>Напиши какое фото создать:</b>
-'''
+''')
     )
 
 
@@ -41,7 +41,7 @@ def first_start(start_balance: float):
 
 def menu():
     return ScreenDef(
-        text=('<tg-emoji emoji-id="5348125953090403204">▶️</tg-emoji> '
+        text=_('<tg-emoji emoji-id="5348125953090403204">▶️</tg-emoji> '
               f'<a href="t.me/{settings.BOT_USERNAME}?start=command-models">'
               '<b>Выбрать модель для генерации</b></a>\n\n'
               '<tg-emoji emoji-id="5409048419211682843">💵</tg-emoji> '

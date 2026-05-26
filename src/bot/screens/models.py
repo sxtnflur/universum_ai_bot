@@ -1,6 +1,7 @@
 import datetime
 import textwrap
 from typing import Iterable
+from aiogram.utils.i18n import gettext as _
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from bot import keyboards
@@ -56,8 +57,8 @@ def models_list(models: list[Model],
 
 
 def __settings(
-    model: Model,
-    action_type: ActionType
+        model: Model,
+        action_type: ActionType
 ):
     text = f'''
 <blockquote><b>Модель:</b> {model.title}
@@ -72,23 +73,23 @@ def __settings(
 
 
 def ask_prompt(
-    model: Model,
-    action_type: ActionType
+        model: Model,
+        action_type: ActionType
 ):
     return ScreenDef(
-        text=f'''
+        text=_(f'''
 {__settings(model, action_type)}
 
 <i>Отправьте ваш промпт:</i>
-'''
+''')
     )
 
 
 def ask_images(
-    model: Model,
-    action_type: ActionType,
-    min_count_images: int | None = None,
-    max_count_images: int | None = None
+        model: Model,
+        action_type: ActionType,
+        min_count_images: int | None = None,
+        max_count_images: int | None = None
 ):
     text = __settings(model, action_type) + '\n\n'
     if max_count_images is not None:
@@ -102,26 +103,26 @@ def ask_images(
         text += f'<i>Отправьте изображения:</i>'
 
     return ScreenDef(
-        text=text
+        text=_(text)
     )
 
 
 def prepare_to_generation(
-    model: Model,
-    price: float,
-    num_images: int = 1,
-    max_num_images: int = 1,
-    prompt: str | None = None,
-    images_count: int | None = None,
-    ratio: str | None = None,
-    resolution: str | None = None,
-    upscale_factor: float | None = None,
-    noise_scale: float | None = None,
+        model: Model,
+        price: float,
+        num_images: int = 1,
+        max_num_images: int = 1,
+        prompt: str | None = None,
+        images_count: int | None = None,
+        ratio: str | None = None,
+        resolution: str | None = None,
+        upscale_factor: float | None = None,
+        noise_scale: float | None = None,
 
-    price_description: str | None = None,
+        price_description: str | None = None,
 
-    show_additional_settings: bool = False,
-    **kwargs
+        show_additional_settings: bool = False,
+        **kwargs
 ):
     text = f'<b>Модель:</b> {model.title}'
     if prompt:
@@ -133,12 +134,12 @@ def prepare_to_generation(
 
     ikb = [[
         InlineKeyboardButton(
-            text='Сгенерировать',
+            text=_('Сгенерировать'),
             callback_data='start-generate'
         )
     ]]
     if ratio is not None and show_additional_settings:
-        text += f'\n<b>Соотн. сторон:</b> {ratio}'
+        text += _(f'\n<b>Соотн. сторон:</b> {ratio}')
         ikb.append([InlineKeyboardButton(
             text=ratio, callback_data='select-ratio'
         )])
@@ -150,7 +151,7 @@ def prepare_to_generation(
     if upscale_factor is not None and show_additional_settings:
         text += f'\n<b>Коэффициент улучшения (Upscale Factor):</b> {upscale_factor}'
         ikb.append([InlineKeyboardButton(
-            text=f'Коэф. улучш.: {upscale_factor}',
+            text=_(f'Коэф. улучш.: {upscale_factor}'),
             callback_data=SelectInputNumberParamCallback(
                 param='upscale_factor'
             ).pack()
@@ -166,7 +167,7 @@ def prepare_to_generation(
 
     if max_num_images > 1 and show_additional_settings:
         ikb.append([InlineKeyboardButton(
-            text=f'Количество фото: {num_images}',
+            text=_(f'Количество фото: {num_images}'),
             callback_data='select-num_images'
         )])
         text += f'\n<b>Количество фото:</b> {num_images}'
@@ -183,53 +184,58 @@ def prepare_to_generation(
 
     ikb.append([
         InlineKeyboardButton(
-            text='👁 Расшир. настройки' if show_additional_settings
-            else '🙈 Расшир. настройки',
+            text=_(
+                '👁 Расшир. настройки' if show_additional_settings
+                else '🙈 Расшир. настройки'
+            ),
             callback_data='switch-show-settings'
         )
     ])
 
     return ScreenDef(
-        text=text,
+        text=_(text),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=ikb)
     )
 
 
 def not_enough_balance(
-    balance: float,
-    need: float
+        balance: float,
+        need: float
 ):
     return ScreenDef(
-        text=f'''
+        text=_('''
 ❌ К сожалению, на вашем балансе недостаточно средств
 
 <b>Ваш баланс:</b> {balance}
 <b>Стоимость генерации:</b> {need}
 
 <b>Пополнить баланс:</b> /buy
-'''
+''').format(balance=balance, need=need)
     )
 
 
 def on_success_generation(
-    model_title: str,
-    action_type_title: str,
-    amount: float,
-    updated_balance: float
+        model_title: str,
+        action_type_title: str,
+        amount: float,
+        updated_balance: float
 ):
     return ScreenDef(
-        text=f'''
+        text=_('''
 <tg-emoji emoji-id="5206607081334906820">✔️</tg-emoji> Генерация для модели <b>{model_title} ({action_type_title})</b> выполнена
 
 <b>Генерация стоила:</b> {amount} ⚡️
-<b>Текущий баланс:</b> {updated_balance} ⚡️''',
+<b>Текущий баланс:</b> {updated_balance} ⚡️''')
+        .format(amount=amount, updated_balance=updated_balance,
+                model_title=model_title,
+                action_type_title=action_type_title),
         reply_markup=keyboards.menu.menu()
     )
 
 
 def _on_failed_gen(
-    request_id: str | None = None,
-    model_info: str | None = None
+        request_id: str | None = None,
+        model_info: str | None = None
 ):
     text = f'<blockquote>'
     if model_info is not None:
@@ -241,36 +247,36 @@ def _on_failed_gen(
 
 
 def on_failed_sending_generation(
-    support_url: str, delay: int,
-    model_info: str | None = None,
-    request_id: str | None = None,
-    last_attempt: bool = False
+        support_url: str, delay: int,
+        model_info: str | None = None,
+        request_id: str | None = None,
+        last_attempt: bool = False
 ):
     print(f'screens: {request_id=}')
     return ScreenDef(
-        text=f'<b>Произошла ошибка при отправке результата генерации</b>\n'
-             + (f'Повторная попытка отправки будет через <i>{delay}</i> секунд\n' if not last_attempt
-                else '') +
-             f'Если ждете слишком долго, перешлите это сообщение в поддержку: {support_url}\n\n'
-             f'{_on_failed_gen(request_id, model_info)}'
+        text=_(f'<b>Произошла ошибка при отправке результата генерации</b>\n'
+               + (f'Повторная попытка отправки будет через <i>{delay}</i> секунд\n' if not last_attempt
+                  else '') +
+               f'Если ждете слишком долго, перешлите это сообщение в поддержку: {support_url}\n\n'
+               f'{_on_failed_gen(request_id, model_info)}')
     )
 
 
 def on_failed_generation(
-    support_url: str,
-    request_id: str | None = None,
-    model_info: str | None = None
+        support_url: str,
+        request_id: str | None = None,
+        model_info: str | None = None
 ):
     return ScreenDef(
-        text=f'<b>Произошла ошибка во время генерации</b>\n'
-             f'Ваш баланс не изменился. Пожалуйста, попробуйте сгенерировать повторно.\n\n'
-             f'Если проблема повторяется, перешлите это сообщение в поддержку: {support_url}\n\n'
-             f'{_on_failed_gen(request_id, model_info)}'
+        text=_(f'<b>Произошла ошибка во время генерации</b>\n'
+               f'Ваш баланс не изменился. Пожалуйста, попробуйте сгенерировать повторно.\n\n'
+               f'Если проблема повторяется, перешлите это сообщение в поддержку: {support_url}\n\n'
+               f'{_on_failed_gen(request_id, model_info)}')
     )
 
 
 def send_result_as_links(
-    links: list[str]
+        links: list[str]
 ):
     if len(links) == 1:
         return ScreenDef(
@@ -289,9 +295,50 @@ def send_result_as_links(
              'Ссылки перестанут работать через <b>24 часа</b>',
         reply_markup=InlineKeyboardMarkup(inline_keyboard=create_list_kb(
             objs=links, get_btn=lambda link: InlineKeyboardButton(
-                text='Скачать файл #' + str(links.index(link)+1),
+                text='Скачать файл #' + str(links.index(link) + 1),
                 url=link
             ),
             width=5
         ))
+    )
+
+
+def wrong_quantity_images(
+        sent_images: int,
+        min_images: int | None = None,
+        max_images: int | None = None
+):
+    return ScreenDef(
+        text=f'Нужно отправить от {min_images or 1} '
+             f'{f"до {max_images} " if max_images else ""}'
+             f'изображений.\n'
+             f'Вы отправили {sent_images}\n\n'
+             f'Отправьте все изображения еще раз:'
+    )
+
+
+def ask_input_param_number(
+        min: int | None = None,
+        max: int | None = None,
+        only_int: bool | None = None
+):
+    if min is not None:
+        text = f'Введите значение от {min}'
+        if max:
+            text += f' до {max}'
+    elif max is not None:
+        text = f'Введите значение до {max}'
+    else:
+        text = 'Введите значение'
+
+    if only_int:
+        text += ' (число должно быть круглым: 1/2/3 <s>1.5</s>)'
+    else:
+        text += ' (число может быть нецелым: 1/1.1/1.2/.../2/2.1/...)'
+    return ScreenDef(text=text)
+
+
+def wait_msg():
+    return ScreenDef(
+        text='Подождите немного, генерация займет некоторое время...'
     )

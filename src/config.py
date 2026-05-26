@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     S3_REGION: str
     S3_BUCKET: str
 
+    EXCHANGE_RATE_RUB: float = 80
+    EXCHANGE_RATE_XTR: float = 100
+
     @property
     def BOT_URL(self):
         return f'https://t.me/{self.BOT_USERNAME}'

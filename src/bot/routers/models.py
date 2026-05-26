@@ -113,9 +113,7 @@ async def get_prompt(
         message: Message, state: FSMContext
 ):
     if not message.text:
-        await message.answer(
-            'Отправьте ваш промпт:'
-        )
+        await screens.errors.prompt_not_sent().answer(message)
         return
 
     await state.update_data(prompt=message.text)
@@ -140,9 +138,7 @@ async def get_image(
         media_group: list[Message] | None = None
 ):
     if not message.photo:
-        await message.answer(
-            'Отправьте изображения:'
-        )
+        await screens.errors.image_not_send().answer(message)
         return
 
     if media_group:
@@ -158,23 +154,19 @@ async def get_image(
     func_info = inspect_generation_func(func)
 
     if func_info.min_images and len(images) < func_info.min_images:
-        await message.answer(
-            f'Нужно отправить от {func_info.min_images or 1} '
-            f'{f"до {func_info.max_images} " if func_info.max_images else ""}'
-            f'изображений.\n'
-            f'Вы отправили {len(images)}\n\n'
-            f'Отправьте все изображения еще раз:'
-        )
+        await screens.models.wrong_quantity_images(
+            sent_images=len(images),
+            min_images=func_info.min_images,
+            max_images=func_info.max_images
+        ).answer(message)
         return
 
     if func_info.max_images and len(images) > func_info.max_images:
-        await message.answer(
-            f'Нужно отправить от {func_info.min_images or 1} '
-            f'{f"до {func_info.max_images} " if func_info.max_images else ""}'
-            f'изображений.\n'
-            f'Вы отправили {len(images)}\n\n'
-            f'Отправьте все изображения еще раз:'
-        )
+        await screens.models.wrong_quantity_images(
+            sent_images=len(images),
+            min_images=func_info.min_images,
+            max_images=func_info.max_images
+        ).answer(message)
         return
 
     await state.update_data(images=images)
@@ -429,24 +421,11 @@ async def select_input_num_param(
     func: Callable = getattr(fal_service, action_type)
     func_info = inspect_generation_func(func)
     filters = get_input_num_param_filters(func_info, callback_data.param)
-    if filters['min'] is not None:
-        text = f'Введите значение от {filters["min"]}'
-        if 'max' in filters:
-            text += f' до {filters["max"]}'
-    elif filters['max'] is not None:
-        text = f'Введите значение до {filters["max"]}'
-    else:
-        text = 'Введите значение'
-
-    if filters['only_int']:
-        text += ' (число должно быть круглым: 1/2/3 <s>1.5</s>)'
-    else:
-        text += ' (число может быть нецелым: 1/1.1/1.2/.../2/2.1/...)'
-    await call.message.answer(text)
     await state.update_data(
         wait_param=callback_data.param
     )
     await state.set_state(GenerationStates.input_num_param)
+    await screens.models.ask_input_param_number(**filters).answer(call)
 
 
 @router.message(GenerationStates.input_num_param)
@@ -456,7 +435,7 @@ async def input_num_param(
     try:
         val = float(message.text)
     except:
-        await message.answer('Вы ввели не число')
+        await screens.errors.not_number_sent().answer(message)
         return
 
     data = await state.get_data()
@@ -471,15 +450,15 @@ async def input_num_param(
         try:
             val = int(val)
         except:
-            await message.answer('Можно ввести только целое число')
+            await screens.errors.not_int_send().answer(message)
             return
 
     if filters['min'] is not None and val < filters['min']:
-        await message.answer(f'Минимальное значение: {filters["min"]}')
+        await screens.errors.too_little_number(filters['min']).answer(message)
         return
 
     if filters['max'] is not None and val > filters["max"]:
-        await message.answer(f'Максимальное значение: {filters["max"]}')
+        await screens.errors.too_big_number(filters['max']).answer(message)
         return
 
     data[data['wait_param']] = val
@@ -542,10 +521,11 @@ async def start_generate(
         else:
             action = 'typing'
 
-        wait_msg = await call.message.answer('Подождите немного, генерация займет некоторое время...')
-
         model_info = f'{model.title} ({prepare_strings.action_type(action_type)})'
         request_id: str | None = None
+
+        wait_msg = await screens.models.wait_msg().answer(call)
+
         try:
             res = await send_action_while_do_func(
                 coroutine=func(**kwargs), chat_id=call.message.chat.id,
@@ -599,7 +579,7 @@ async def start_generate(
                 amount=amount
             )
 
-        await call.message.answer('Подождите немного, генерация займет некоторое время...')
+        await screens.models.wait_msg().answer(call)
 
 
 attempts = 3

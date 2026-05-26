@@ -1,11 +1,12 @@
+from config import settings
 from typing_extensions import Literal
 
 
 Currency = Literal['rub', 'xtr']
 
 
-def process_amount(amount: float):
-    return round(amount * 100, 2)
+def process_amount(amount: float, min_val: float = 0.01, round_digits: int = 2):
+    return max(round(amount * 1.5, round_digits), min_val)
 
 
 def get_currency_by_method(method: Literal['yookassa', 'XTR']) -> Currency:
@@ -17,8 +18,8 @@ def get_currency_by_method(method: Literal['yookassa', 'XTR']) -> Currency:
 
 def get_convert_factor(currency: Currency):
     return {
-        'xtr': 0.02,
-        'rub': 1
+        'xtr': settings.EXCHANGE_RATE_XTR,
+        'rub': settings.EXCHANGE_RATE_RUB
     }[currency.lower()]
 
 
@@ -35,6 +36,6 @@ def get_sign(currency: Currency):
 
 def get_min_amount(currency: Currency):
     return {
-        'xtr': 200,
+        'xtr': 1,
         'rub': 1
     }[currency]

@@ -1,16 +1,23 @@
 import logging
 from contextlib import asynccontextmanager
 from aiogram.types import Update
+from aiogram.utils.i18n import FSMI18nMiddleware
 from api.app import create_app
+from bot.i18n import i18n
 from bot.loader import dp, bot
 from bot.routers import __routers__
 from bot.lifespan import onstartup
 from config import settings
 from fastapi import FastAPI, BackgroundTasks, Request, HTTPException, Depends
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 dp.include_routers(*__routers__)
+
+i18n_mdlwr = FSMI18nMiddleware(i18n)
+
+dp.message.middleware(i18n_mdlwr)
+dp.callback_query.middleware(i18n_mdlwr)
 
 
 @asynccontextmanager

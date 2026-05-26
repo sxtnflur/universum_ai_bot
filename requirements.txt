@@ -1,5 +1,5 @@
 aioboto3
-aiogram
+aiogram[i18n]
 aiohttp_socks
 fal_client
 sqlalchemy
