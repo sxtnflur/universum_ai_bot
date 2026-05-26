@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     EXCHANGE_RATE_RUB: float = 80
     EXCHANGE_RATE_XTR: float = 100
 
+    BASE_SRC: str = ''
+
     @property
     def BOT_URL(self):
         return f'https://t.me/{self.BOT_USERNAME}'
