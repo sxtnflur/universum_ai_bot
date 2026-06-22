@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     YOOKASSA_SHOP_ID: int
     YOOKASSA_API_KEY: str
 
+    START_BALANCE: int = 1
+
     API_PREFIX: str = '/universumai/api/v1'
     BOT_WEBHOOK_ENDPOINT: str = '/webhook'
     BOT_WEBHOOK_URL: str

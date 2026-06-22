@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from bot import screens
+from config import settings
 from data import models
 from db.decorator import db_connect
 from db.repositories import UsersRepo
@@ -24,11 +25,9 @@ async def start(
 ):
     await state.clear()
 
-    start_balance = 15
-
     user_exists = await UsersRepo(db).exists(id=message.from_user.id)
     if not user_exists:
-        await screens.start.first_start(start_balance).answer(message)
+        await screens.start.first_start(settings.START_BALANCE).answer(message)
         model = models['nano_banana_2']
         await state.update_data(model_key=model.key,
                                 action_type=model.types[0])
@@ -46,7 +45,7 @@ async def start(
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
             language=message.from_user.language_code,
-            balance=start_balance,
+            balance=settings.START_BALANCE,
             utm=utm
         ),
         not_update=['id', 'balance', 'utm'],
