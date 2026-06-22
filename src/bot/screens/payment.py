@@ -21,8 +21,8 @@ def balance(balance: float):
 
 
 def main(
-        exchange_rate_rub: float,
-        exchange_rate_xtr: float
+        exchange_rate_rub: float = settings.EXCHANGE_RATE_RUB,
+        exchange_rate_xtr: float = settings.EXCHANGE_RATE_XTR
 ):
     ikb = create_list_kb(
         [1, 3, 5, 10, 100],
@@ -38,8 +38,7 @@ def main(
     ])
     return ScreenDef(
         text=_('<tg-emoji emoji-id="5397916757333654639">➕</tg-emoji> <b>Выберите сумму пополнения баланса:</b>\n\n'
-               f'<b>Курс:</b><blockquote>1 ⚡️= {exchange_rate_rub} руб\n\n'
-               f'1 ⚡️= {exchange_rate_xtr} ⭐ Telegram Stars</blockquote>\n\n'
+               f'<blockquote><b>Курс:</b>\n<b>1 ⚡️</b>= <b>1$</b> = <b>{exchange_rate_rub}₽</b> = <b>{exchange_rate_xtr} ⭐ Telegram Stars</b></blockquote>\n\n'
                f'<a href="t.me/{settings.BOT_USERNAME}?start=command-balance">Узнать мой баланс</a> | '
                f'<a href="t.me/{settings.BOT_USERNAME}?start=1">В меню</a>'),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=ikb)
